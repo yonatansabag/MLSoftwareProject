@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+    <div style="text-align: center; margin-top: 50px;">
+        <h1 style="color: #ff5733;">📝 Sign Up</h1>
+        <form method="POST" style="margin: 30px auto; width: 60%; border: 2px solid #ff5733; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+            <div class="form-group">
+                <label for="email" style="font-size: 1.2em; color: #2c3e50;">Username</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  placeholder="Enter username"
+                  required
+                />
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="password1" style="font-size: 1.2em; color: #2c3e50;">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password1"
+                  name="password1"
+                  placeholder="Enter password"
+                  required
+                />
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="password2" style="font-size: 1.2em; color: #2c3e50;">Password (Confirm)</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password2"
+                  name="password2"
+                  placeholder="Confirm password"
+                  required
+                />
+            </div>
+            <br />
+            <button type="submit" class="btn btn-primary" style="padding: 10px 20px; color: #fff; background-color: #ff5733; border: none; border-radius: 5px;">Submit</button>
+        </form>
+    </div>
+{% endblock %}

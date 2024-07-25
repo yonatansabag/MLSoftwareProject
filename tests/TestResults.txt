@@ -1,0 +1,29 @@
+Test Results:
+
+test_authorized_upload_invalid_image (__main__.ImageUploadAPITest)
+Test case for attempting to upload an invalid image after successful login. ... ok
+test_authorized_upload_valid_image (__main__.ImageUploadAPITest)
+Test case for uploading a valid image after successful login. ... ok
+test_get_result_with_login (__main__.ImageUploadAPITest)
+Test case for accessing result endpoints after logging in. ... ok
+test_get_result_without_login (__main__.ImageUploadAPITest)
+Test case for accessing result endpoints without logging in. ... ok
+test_get_upload_page_no_login (__main__.ImageUploadAPITest)
+Test case for accessing the upload page without logging in. ... ok
+test_login_correct_info (__main__.ImageUploadAPITest)
+Test case for logging in with correct credentials. ... ok
+test_login_wrong_password (__main__.ImageUploadAPITest)
+Test case for logging in with incorrect password. ... ok
+test_login_wrong_username (__main__.ImageUploadAPITest)
+Test case for logging in with incorrect username. ... ok
+test_logout (__main__.ImageUploadAPITest)
+Test case for logging out. ... ok
+test_status (__main__.ImageUploadAPITest)
+Test case for checking application status. ... ok
+test_unauthorized_upload_try (__main__.ImageUploadAPITest)
+Test case for attempting to upload an image without authorization. ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 43.219s
+
+OK
