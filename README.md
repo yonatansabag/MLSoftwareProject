@@ -16,8 +16,8 @@ This Flask application allows users to sign up, log in, and upload photos. Each 
 
 1. **Clone the repository**:
     ```sh
-    git clone https://github.com/yahav1349/Client-Srver-Web.git
-    cd Client-Srver-Web.git
+    git clone https://github.com/yonatansabag/MLSoftwareProject.git
+    cd MLSoftwareProject.git
     ```
 
 2. **Install dependencies**:
