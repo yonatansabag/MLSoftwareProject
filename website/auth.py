@@ -8,7 +8,6 @@ from .utils import DummyUser
 auth = Blueprint('auth', __name__)
 
 
-
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     """
@@ -32,7 +31,7 @@ def login():
         Response: Renders 'login.html' template (GET) or redirects to 'views.upload_image' or returns JSON response (POST).
     """
     if current_user.is_authenticated and 'just_signed_up' not in session:
-        return redirect(url_for('views.upload_image'))  # Redirect to the upload image page if already logged in
+        return redirect(url_for('views.home'))  # Redirect to the home
 
     if request.method == 'GET':
         return render_template("login.html", user=current_user)
