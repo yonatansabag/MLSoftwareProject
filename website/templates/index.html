@@ -79,21 +79,28 @@
             margin-right: auto;
         }
 
-        .home-button {
+        .home-button, .logout-button {
             background-color: whitesmoke;
             color: #362f2f;
             border: none;
-            padding: 10px; /* Reduced padding */
+            padding: 10px;
             text-align: center;
             text-decoration: none;
             font-size: 16px;
             position: absolute;
             top: 10px;
-            right: 10px;
             cursor: pointer;
         }
 
-        .home-button:hover {
+        .home-button {
+            right: 100px;
+        }
+
+        .logout-button {
+            right: 10px;
+        }
+
+        .home-button:hover, .logout-button:hover {
             text-decoration: underline;
         }
 
@@ -163,7 +170,8 @@
 </head>
 <body>
     <div class="container">
-        <a href="/logout" class="home-button">Log Out</a>
+        <a href="/" class="home-button">Home</a>
+        <a href="/logout" class="logout-button">Log Out</a>
         <h1>📷 Hello there, photo uploader!</h1>
         <h2>Please upload a picture</h2>
 
