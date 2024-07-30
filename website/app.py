@@ -10,6 +10,7 @@ from flask_login import LoginManager, current_user
 from typing import Any
 from os import path
 from .utils import DummyUser
+from celery_config import make_celery
 
 # Initialize SQLAlchemy database instance
 
@@ -19,6 +20,7 @@ DB_NAME = "database.db"
 
 # Define the upload folder for file storage
 UPLOAD_FOLDER = 'uploads'
+
 
 def create_app():
     """
@@ -34,7 +36,10 @@ def create_app():
     app.config['SUCCESS'] = 0  # Counter for successful operations
     app.config['FAILURE'] = 0  # Counter for failed operations
     app.config['START_TIME'] = time.time()  # Application start time
+    app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+    app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
     db.init_app(app)  # Initialize SQLAlchemy with the app instance
+    celery = make_celery(app)
 
     from .views import views
     from .auth import auth

@@ -123,7 +123,7 @@
             formData.append('image', file);
 
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/upload_image', true);
+            xhr.open('POST', '/async_upload_image', true);
 
             xhr.upload.onprogress = function (event) {
                 if (event.lengthComputable) {
