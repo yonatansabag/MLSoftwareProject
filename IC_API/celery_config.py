@@ -3,8 +3,8 @@ from celery import Celery
 def make_celery(app):
     celery = Celery(
         app.import_name,
-        backend='mongodb://localhost:27017/celery_results',
-        broker='redis://localhost:6379/0'
+        backend='mongodb://localhost:27017/celery',  # MongoDB for results
+        broker='mongodb://localhost:27017/celery'    # MongoDB for broker
     )
     celery.conf.update(app.config)
     TaskBase = celery.Task
