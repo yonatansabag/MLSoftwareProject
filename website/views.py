@@ -6,6 +6,8 @@ import google.generativeai as genai
 from google.generativeai.types import ContentType
 from PIL import Image
 import time
+import random
+from app import app, celery
 
 # Create a Flask Blueprint named 'views'
 views = Blueprint('views', __name__)
@@ -14,6 +16,8 @@ views = Blueprint('views', __name__)
 GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
 # Configure generative AI with the API key
 genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 
 @views.route('/', methods=['GET', 'POST'])
 def home():
@@ -29,7 +33,7 @@ def home():
     current_app.config['SUCCESS'] += 1
     return render_template("home.html", user=current_user)
 
-
+@celery.task
 def describe_image(image_path):
     """
     Generates a textual description of an image using generative AI.
@@ -40,11 +44,14 @@ def describe_image(image_path):
     Returns:
         str: Generated description of the image.
     """
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # TODO: Check if path is fined or need to send image
     text_prompt = "Describe the image"
     image = Image.open(image_path)
     prompt = [text_prompt, image]
     response = model.generate_content(prompt)
+    if not response.text:
+        self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
+        return {'error': 'Failed to generate description'}
     return response.text
 
 
@@ -81,10 +88,13 @@ def upload_image():
             file_path = os.path.join('uploads', filename)
             file.save(file_path)
             allowed_extensions = ['png', 'jpg', 'jpeg']
+            content_type = file.content_type
 
-            if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+            if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions \
+                    or content_type not in ['image/png', 'image/jpeg', 'image/jpg']:
                 current_app.config['FAILURE'] += 1
-                return make_response(jsonify({'error': {'code': 400, 'message': 'Image is not PNG, JPG, or JPEG'}}), 400)
+                return make_response(jsonify({'error': {'code': 400, 'message': 'Image is not PNG, JPG, or JPEG'}}),
+                                     400)
 
             description = describe_image(file_path)
             description = description.split('. ')
@@ -102,6 +112,7 @@ def status():
     Returns:
         JSON Response: Application uptime, success and failure counts, health status, and API version.
     """
+    # TODO: Modify data to follow processes of upload image async
     current_app.config['SUCCESS'] += 1
     data = {
         'uptime': time.time() - current_app.config['START_TIME'],
@@ -130,6 +141,57 @@ def result(request_id):
         JSON Response: Error message indicating ID not found (HTTP 404).
     """
     return make_response(jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404)
+
+@app.route('/async_upload', methods=['POST'])
+def async_upload_image():
+    if 'image' not in request.files:
+        return make_response(jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400)
+
+    file = request.files['image']
+    if file.filename == '':
+        return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
+
+    if file:
+        filename = secure_filename(file.filename)
+        file_path = os.path.join('uploads', filename)
+        file.save(file_path)
+        allowed_extensions = ['png', 'jpg', 'jpeg']
+        content_type = file.content_type
+
+        if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions or content_type not in [
+            'image/png', 'image/jpeg']:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Image is not PNG or JPEG'}}), 400)
+
+        # Send image to the classification API
+        response = requests.post(
+            'http://api_server:8000/classify',  # API endpoint
+            files={'image': image}  # Send the image as file
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            return render_template('result.html', result=result)
+        else:
+            return 'Classification failed', 500
+
+
+
+
+@app.route('/result/<req_id>', methods=['GET'])
+def get_result(req_id):
+    # Send image to the classification API
+    response = requests.post(
+        'http://api_server:8000/get_res',
+        files={'req_id': req_id}
+    )
+    return jsonify(response)
+
+    # if response.status_code == 200:
+    #     result = response.json()
+    #     return render_template('result.html', result=result)
+    # else:
+    #     return 'Classification failed', 500
+
 
 
 @views.route('/game', methods=['GET'])
