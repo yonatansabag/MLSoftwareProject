@@ -11,10 +11,7 @@ import traceback
 
 
 app = Flask(__name__)
-
-# MongoDB client setup
-client = MongoClient("mongodb://mongodb:27017/")
-db = client["image_classification"]
+UPLOAD_FOLDER = 'uploads'
 
 # Set your Google API key for generative AI
 GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
@@ -31,8 +28,11 @@ def create_app():
         Flask: Configured Flask application instance.
     """
     app = Flask(__name__)
-    app.config['CELERY_BROKER_URL'] = 'mongodb://localhost:27017/celery_broker'
-    app.config['CELERY_RESULT_BACKEND'] = 'mongodb://localhost:27017/celery_results'
+    app.config['SUCCESS'] = 0  # Counter for successful operations
+    app.config['FAILURE'] = 0  # Counter for failed operations
+    # app.config['START_TIME'] = time.time()  # Application start time
+    app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+    app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
     celery = make_celery(app)
 
 
