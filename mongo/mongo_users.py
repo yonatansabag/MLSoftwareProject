@@ -5,6 +5,7 @@ from flask_login import UserMixin
 client = MongoClient('mongodb://localhost:27017/')
 db = client['Users']
 collection = db['Users']
+game = db["Words"]
 
 class User(UserMixin):
     """
@@ -62,3 +63,33 @@ class User(UserMixin):
             str: The user's username as the unique identifier.
         """
         return self.username
+
+class WordDatabase():
+    """
+    Represents a word in the MongoDB database.
+    """
+
+    def __init__(self, word=None):
+        self.word = word
+
+    @classmethod
+    def get(cls, word):
+
+        word_data = game.find_one({"word": word})
+        if word_data:
+            return cls(word=word_data['word'])
+        return None
+
+    @classmethod
+    def add_word(cls, word):
+
+
+        word_doc = {
+            'word': word,
+        }
+        game.insert_one(word_doc)
+        return cls(word=word)
+
+    def get_id(self):
+
+        return self.word
