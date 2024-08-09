@@ -3,8 +3,8 @@ from flask_login import UserMixin
 
 # Initialize MongoDB client and database (global)
 client = MongoClient('mongodb://localhost:27017/')
-db = client['mydatabase']
-collection = db['users']
+db = client['Users']
+collection = db['Users']
 
 class User(UserMixin):
     """
@@ -51,3 +51,14 @@ class User(UserMixin):
         }
         collection.insert_one(user_document)
         return cls(username=username, password=password)
+    
+    
+    def get_id(self):
+        """
+        Return the unique identifier for the user. Flask-Login uses this method
+        to retrieve the user's ID.
+
+        Returns:
+            str: The user's username as the unique identifier.
+        """
+        return self.username
