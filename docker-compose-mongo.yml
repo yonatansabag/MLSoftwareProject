@@ -14,6 +14,7 @@ services:
     ports:
       - 8081:8081  # Maps port 8081 on the host to port 8081 on the container
 
+
 volumes:
   mongodb:  # Defines a named volume to persist MongoDB data
 

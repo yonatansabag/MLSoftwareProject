@@ -1,3 +1,4 @@
+import requests
 from flask import Blueprint, render_template, request, jsonify, make_response, current_app, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -7,7 +8,10 @@ from google.generativeai.types import ContentType
 from PIL import Image
 import time
 import random
-from app import app, celery
+# from app import app
+from sentence_transformers import SentenceTransformer
+import numpy as np
+from mongo.mongo_users import WordDatabase
 
 # Create a Flask Blueprint named 'views'
 views = Blueprint('views', __name__)
@@ -17,6 +21,7 @@ GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
 # Configure generative AI with the API key
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
+embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
 
 
 @views.route('/', methods=['GET', 'POST'])
@@ -33,7 +38,7 @@ def home():
     current_app.config['SUCCESS'] += 1
     return render_template("home.html", user=current_user)
 
-@celery.task
+
 def describe_image(image_path):
     """
     Generates a textual description of an image using generative AI.
@@ -50,12 +55,12 @@ def describe_image(image_path):
     prompt = [text_prompt, image]
     response = model.generate_content(prompt)
     if not response.text:
-        self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
+        # self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
         return {'error': 'Failed to generate description'}
     return response.text
 
 
-@views.route('/upload_image',  methods=['GET', 'POST'])
+@views.route('/upload_image', methods=['GET', 'POST'])
 @login_required
 def upload_image():
     """
@@ -142,7 +147,8 @@ def result(request_id):
     """
     return make_response(jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404)
 
-@app.route('/async_upload', methods=['POST'])
+
+@views.route('/async_upload', methods=['POST'])
 def async_upload_image():
     if 'image' not in request.files:
         return make_response(jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400)
@@ -165,7 +171,7 @@ def async_upload_image():
         # Send image to the classification API
         response = requests.post(
             'http://api_server:8000/classify',  # API endpoint
-            files={'image': image}  # Send the image as file
+            files={'image': file}  # Send the image as file
         )
 
         if response.status_code == 200:
@@ -175,9 +181,7 @@ def async_upload_image():
             return 'Classification failed', 500
 
 
-
-
-@app.route('/result/<req_id>', methods=['GET'])
+@views.route('/result/<req_id>', methods=['GET'])
 def get_result(req_id):
     # Send image to the classification API
     response = requests.post(
@@ -191,7 +195,6 @@ def get_result(req_id):
     #     return render_template('result.html', result=result)
     # else:
     #     return 'Classification failed', 500
-
 
 
 @views.route('/game', methods=['GET'])
@@ -214,33 +217,40 @@ def start_game():
     Returns:
         JSON Response: Confirmation of game start.
     """
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    # model = genai.GenerativeModel('gemini-pro')
+    # model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
     generation_config = genai.GenerationConfig(
         stop_sequences=None,
-        temperature=0.4,
+        temperature=0.7,
         top_p=1.0,
         top_k=32,
         candidate_count=1,
         max_output_tokens=32,
     )
 
-    prompt = """Generate a single, random word that is suitable for a word guessing game. The word should be neither 
-    too common nor too obscure. Avoid generating repetitive words. The word should be easy 
-    enough to guess but still provide a really small challenge. The output should be just one word, without any additional 
-    characters, line breaks, or formatting."""
+    prompt = """Generate a single, random word suitable for a word guessing game for people whose english is not 
+    their mother tongue. The word should strike a balance between being common and obscure but should be more common. 
+    Ensure the word is distinct, moderately challenging, and not commonly repeated in similar contexts. Do not use 
+    words that have been generated recently. The output should be a single word with no additional characters, 
+    spaces, line breaks, or formatting."""
 
-    hidden_word = model.generate_content(
-        contents=prompt,
-        generation_config=generation_config,
-        stream=False,
-    ).text
+    while True:
+        # Generate a word
+        hidden_word = model.generate_content(
+            contents=prompt,
+            generation_config=generation_config,
+            stream=False,
+        ).text
+        print(f"Hidden word : {hidden_word}")
+        # Check if the word already exists in the database
+        if not WordDatabase.get(hidden_word):
+            # If it doesn't exist, add it to the database
+            WordDatabase.add_word(hidden_word)
+            break
+        else:
+            # If it exists, generate a new word
+            continue
 
-    # hidden_word = model.generate_content(prompt, temper).text
-    # hidden_word = model.generate_content("""Generate a random word. This word will be used as the hidden word for a
-    # word guessing game where players have to guess the word, So, generate a word that is easy to guess but not too
-    # easy. You must return a SINGLE word as the output without any signs of new line, or ** or anything,
-    # just a word. Be creative though, don't think only of 2 words and generate them repeatedly.""").text
     session['hidden_word'] = hidden_word
     session['game_over'] = False
     return jsonify({"message": "Game started! Make your guess."})
@@ -261,27 +271,33 @@ def guess():
     if not user_guess:
         return make_response(jsonify({'error': {'code': 400, 'message': 'No guess provided'}}), 400)
 
+    def cosine_similarity(vec1, vec2):
+        # Calculate cosine similarity
+        dot_product = np.dot(vec1, vec2)
+        norm_vec1 = np.linalg.norm(vec1)
+        norm_vec2 = np.linalg.norm(vec2)
+        cosine_sim = dot_product / (norm_vec1 * norm_vec2)
+        return cosine_sim
+
+    def similarity_score(vec1, vec2):
+        # Get cosine similarity
+        cosine_sim = cosine_similarity(vec1, vec2)
+        # Adjust to a 0-1 scale
+        score = (1 + cosine_sim) / 2
+        return score
+
+
     hidden_word = session['hidden_word']
     hidden_word = hidden_word.replace('\n', '').strip()
-
-    # Use the Google Gemini API to compute the similarity
-    # model = genai.GenerativeModel('gemini-1.5-flash')
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content([
-        f"""How close is the word '{user_guess}' to '{hidden_word}'? Please provide a similarity score. You must 
-        return a number between 1 to 10 where 1 means the words are very different and 10 means the words are very 
-        similar. THE RETURN OUTPUT MUST BE A NUMBER. For example : the word "apple" and the word flower are somewhat 
-        similar in the sense that they are both kind of plants. So the similarity score can be above 5 Another 
-        example will be "Bike" and "Car" are similar in the sense that they are both vehicles. So, the similarity 
-        score will be above 8. Another example is "Rain" and "Sunshine", they are not so far semantically. So, 
-        the similarity score will be above 6. Last example will be "Dog" and "kitchen" are not similar at all. So, 
-        the similarity score will be below 3. Please be creative and provide a similarity score based on your own 
-        understanding. Do not classify all words as similar or dissimilar. Provide a score based on the context of 
-        the words. if the words are the same, so the score is 10.""",
-    ])
+    hidden_word_embeddings = embedding_model.encode(hidden_word)
+    user_guess_embeddings = embedding_model.encode(user_guess)
 
     try:
-        score = float(response.text.strip())
+        # score = float(response.text.strip())
+        print(f"Hidden word : {hidden_word}")
+        score = similarity_score(hidden_word_embeddings, user_guess_embeddings)
+        # round the score to be out of 10 and with only one number after the dot
+        score = round(score * 10, 1)
     except ValueError:
         # If conversion fails, provide a default score or handle the error
         score = 0.0
