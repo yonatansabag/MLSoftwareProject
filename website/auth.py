@@ -130,7 +130,6 @@ from flask import Blueprint, jsonify, make_response, render_template, request, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user, UserMixin  
 from mongo import mongo_users # Import the User class that interacts with MongoDB
-from mongo.mongo_config import results_collection
 auth = Blueprint('auth', __name__)
 
 @auth.route('/login', methods=['GET', 'POST'])

@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, request, jsonify, make_response, current_app, session
+from flask import Blueprint, render_template, request, jsonify, make_response, current_app, session, url_for
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
@@ -13,6 +13,11 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from mongo.mongo_users import WordDatabase
 
+from flask import redirect
+from flask_socketio import join_room, leave_room, send, SocketIO, emit
+from string import ascii_uppercase
+from website.app import create_socketio
+
 # Create a Flask Blueprint named 'views'
 views = Blueprint('views', __name__)
 
@@ -23,6 +28,10 @@ genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
 
+rooms = {}  # TODO: move to DB ??
+
+
+# current_app.config['SECRET_KEY'] = 'safasfsa'
 
 @views.route('/', methods=['GET', 'POST'])
 def home():
@@ -197,6 +206,52 @@ def get_result(req_id):
     #     return 'Classification failed', 500
 
 
+def generate_unique_code(length):
+    while True:
+        code = ""
+        for _ in range(length):
+            code += random.choice(ascii_uppercase)
+        if code not in rooms:
+            break
+    return code
+
+
+@views.route('/roomjoin', methods=['POST', 'GET'])
+@login_required
+def roomjoin():
+    """
+    Route to find or create a game room.
+
+    Returns:
+        Template: 'room.html'
+    """
+    session.clear()
+    if request.method == "POST":
+        name = request.form.get("name")
+        code = request.form.get("code")
+        join = request.form.get("join", False)
+        create = request.form.get("create", False)
+
+        if not name:
+            return render_template('room.html', error="Please enter a name", code=code, name=name)
+        if join != False and not code:
+            return render_template('room.html', error="Please enter a room code", code=code, name=name)
+
+        room = code
+        if create != False:
+            room = generate_unique_code(4)
+            rooms[room] = {"members": 0}
+        elif code not in rooms:
+            return render_template('room.html', error="Room does not exist", code=code, name=name)
+
+        session["room"] = room
+        session["name"] = name  # TODO: store user data in session, should be changed to DB or coockies or w.e
+        return redirect(url_for('views.game'))
+
+
+    return render_template('room.html')
+
+
 @views.route('/game', methods=['GET'])
 @login_required
 def game():
@@ -206,7 +261,61 @@ def game():
     Returns:
         Template: 'game.html'
     """
-    return render_template('game.html')
+    room = session.get("room")
+    if room is None or session.get("name") is None or room not in rooms:
+        return redirect(url_for("views.home")) #MAYBE WITHOUT views. just home
+
+    return render_template('game.html', code=room)
+
+
+def setup_socketio_handlers(socketio):
+    @socketio.on("join")
+    def on_join(data):
+        room = data.get("room")
+        name = session.get("name")
+        if not room or not name:
+            return
+        if room not in rooms:
+            rooms[room] = {"members": 0}
+
+        join_room(room)
+        rooms[room]["members"] += 1
+        print(f'{name} joined room {room}')
+        emit('update_users', {'num_users':  rooms[room]["members"]}, room=room)
+        send({"name": name, "message": "has enterd the room"}, to=room)
+
+    @socketio.on("leave")
+    def on_leave(data):
+        room = data.get("room")
+        name = session.get("name")
+        leave_room(room)
+
+        if room in rooms:
+            rooms[room]['members'] -= 1
+            if rooms[room]['members'] <= 0:
+                del rooms[room]
+            else:
+                emit('update_users', {'num_users': rooms[room]["members"]}, room=room)
+
+        send({"name": name, "message": "has left the room"}, to=room)
+        print(f'{name} has left room {room}')
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        room = session.get("room")
+        name = session.get("name")
+        if room and name:
+            leave_room(room)
+            if room in rooms:
+                rooms[room]['members'] -= 1
+                if rooms[room]['members'] <= 0:
+                    del rooms[room]
+                else:
+                    emit('update_users', {'num_users': rooms[room]["members"]}, room=room)
+            send({"name": name, "message": "has left the room"}, to=room)
+            print(f'{name} has left room {room}')
+
+
 
 
 @views.route('/start_game', methods=['POST'])
@@ -217,6 +326,7 @@ def start_game():
     Returns:
         JSON Response: Confirmation of game start.
     """
+
     # model = genai.GenerativeModel('gemini-1.5-flash')
     model = genai.GenerativeModel('gemini-pro')
     generation_config = genai.GenerationConfig(
@@ -285,7 +395,6 @@ def guess():
         # Adjust to a 0-1 scale
         score = (1 + cosine_sim) / 2
         return score
-
 
     hidden_word = session['hidden_word']
     hidden_word = hidden_word.replace('\n', '').strip()
