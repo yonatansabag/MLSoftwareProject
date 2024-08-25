@@ -4,16 +4,13 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import google.generativeai as genai
-from google.generativeai.types import ContentType
 from PIL import Image
 import time
 import random
-# from app import app
 from sentence_transformers import SentenceTransformer
 import numpy as np
-from mongo.mongo_users import WordDatabase, db_words
+from mongo.mongo_users import WordDatabase, db_words, GuessesDatabase, guesses
 import cohere
-
 from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
@@ -214,13 +211,14 @@ def generate_unique_code(length):
         for _ in range(length):
             code += random.choice(ascii_uppercase)
         if code not in rooms:
+            print(f"Code is: {code}")
             break
     return code
 
 
 @views.route('/roomjoin', methods=['POST', 'GET'])
 @login_required
-def roomjoin():
+def room_join():
     """
     Route to find or create a game room.
 
@@ -250,7 +248,6 @@ def roomjoin():
         session["name"] = name  # TODO: store user data in session, should be changed to DB or coockies or w.e
         return redirect(url_for('views.game'))
 
-
     return render_template('room.html')
 
 
@@ -265,7 +262,7 @@ def game():
     """
     room = session.get("room")
     if room is None or session.get("name") is None or room not in rooms:
-        return redirect(url_for("views.home")) #MAYBE WITHOUT views. just home
+        return redirect(url_for("views.home"))  # MAYBE WITHOUT views. just home
 
     return render_template('game.html', code=room)
 
@@ -283,7 +280,7 @@ def setup_socketio_handlers(socketio):
         join_room(room)
         rooms[room]["members"] += 1
         print(f'{name} joined room {room}')
-        emit('update_users', {'num_users':  rooms[room]["members"]}, room=room)
+        emit('update_users', {'num_users': rooms[room]["members"]}, room=room)
         send({"name": name, "message": "has enterd the room"}, to=room)
 
     @socketio.on("leave")
@@ -318,8 +315,6 @@ def setup_socketio_handlers(socketio):
             print(f'{name} has left room {room}')
 
 
-
-
 @views.route('/start_game', methods=['POST'])
 def start_game():
     """
@@ -328,7 +323,6 @@ def start_game():
     Returns:
         JSON Response: Confirmation of game start.
     """
-
     # model = genai.GenerativeModel('gemini-1.5-flash')
     model = genai.GenerativeModel('gemini-pro')
     generation_config = genai.GenerationConfig(
@@ -357,6 +351,7 @@ def start_game():
             # If it doesn't exist, add it to the database
             WordDatabase.add_word(hidden_word.lower())
             print(f"Hidden word : {hidden_word}")
+            # scores = list(game.find({}))
             break
         else:
             # If it exists, generate a new word
@@ -379,6 +374,7 @@ def guess():
         return make_response(jsonify({'error': {'code': 400, 'message': 'Game not started or already over'}}), 400)
 
     user_guess = request.json.get('guess', '')
+    GuessesDatabase.print_all()
     if not user_guess:
         return make_response(jsonify({'error': {'code': 400, 'message': 'No guess provided'}}), 400)
 
@@ -406,12 +402,13 @@ def guess():
 
     try:
         # score = float(response.text.strip())
-        print(f"Hidden word : {hidden_word}")
+        print(f"Hidden word is : {hidden_word}")
         # score = similarity_score(hidden_word_embeddings, user_guess_embeddings)
         score = similarity_score(embeddings[0], embeddings[1])
         # round the score to be out of 10 and with only one number after the dot
         score = round(score * 10, 1)
         score = round(score * 2 - 10, 1)
+        GuessesDatabase.add_word(user_guess, score)
     except ValueError:
         # If conversion fails, provide a default score or handle the error
         score = 0.0
@@ -429,6 +426,12 @@ def guess():
     return jsonify({'message': 'Keep trying!', 'score': score})
 
 
+@views.route('/all_words', methods=['GET'])
+def all_words():
+    words = GuessesDatabase.print_all()
+    return jsonify(words)
+
+
 @views.route('/end_game', methods=['GET'])
 def end_game():
     """
@@ -441,4 +444,5 @@ def end_game():
     if hidden_word:
         hidden_word = hidden_word.replace('\n', '').strip()
     session['game_over'] = True
+    guesses.drop()
     return jsonify({'message': 'Game ended.', 'hidden_word': hidden_word})
