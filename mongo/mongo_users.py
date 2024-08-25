@@ -3,9 +3,10 @@ from flask_login import UserMixin
 
 # Initialize MongoDB client and database (global)
 client = MongoClient('mongodb://localhost:27017/')
-db = client['Users']
-collection = db['Users']
-game = db["Words"]
+db_users = client['Users']
+db_words = client['Words']
+collection = db_users['Users']
+game = db_words["Words"]
 
 class User(UserMixin):
     """

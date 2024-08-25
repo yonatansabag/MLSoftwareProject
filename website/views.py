@@ -11,7 +11,8 @@ import random
 # from app import app
 from sentence_transformers import SentenceTransformer
 import numpy as np
-from mongo.mongo_users import WordDatabase
+from mongo.mongo_users import WordDatabase, db_words
+import cohere
 
 from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
@@ -26,7 +27,8 @@ GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
 # Configure generative AI with the API key
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
-embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
+co = cohere.Client("asNorrF7zKKhnbbpYVB0VZIs1UHu4MnTV1O3gXXe")
+# embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
 
 rooms = {}  # TODO: move to DB ??
 
@@ -338,11 +340,10 @@ def start_game():
         max_output_tokens=32,
     )
 
-    prompt = """Generate a single, random word suitable for a word guessing game for people whose english is not 
-    their mother tongue. The word should strike a balance between being common and obscure but should be more common. 
-    Ensure the word is distinct, moderately challenging, and not commonly repeated in similar contexts. Do not use 
-    words that have been generated recently. The output should be a single word with no additional characters, 
-    spaces, line breaks, or formatting."""
+    prompt = """Generate a single, random word suitable for a word guessing game for people who are not native in English.
+    The word should be common and should be easy to guess. 
+    Ensure the word is distinct. Do not use words that have been generated recently. The output should be a single 
+    word with no additional characters, spaces, line breaks, or formatting."""
 
     while True:
         # Generate a word
@@ -351,11 +352,11 @@ def start_game():
             generation_config=generation_config,
             stream=False,
         ).text
-        print(f"Hidden word : {hidden_word}")
         # Check if the word already exists in the database
-        if not WordDatabase.get(hidden_word):
+        if not WordDatabase.get(hidden_word.lower()):
             # If it doesn't exist, add it to the database
-            WordDatabase.add_word(hidden_word)
+            WordDatabase.add_word(hidden_word.lower())
+            print(f"Hidden word : {hidden_word}")
             break
         else:
             # If it exists, generate a new word
@@ -398,15 +399,19 @@ def guess():
 
     hidden_word = session['hidden_word']
     hidden_word = hidden_word.replace('\n', '').strip()
-    hidden_word_embeddings = embedding_model.encode(hidden_word)
-    user_guess_embeddings = embedding_model.encode(user_guess)
+    texts = [hidden_word, user_guess]
+    embeddings = co.embed(texts=texts, input_type="search_document", model="embed-english-v3.0").embeddings
+    # hidden_word_embeddings = embedding_model.encode(hidden_word)
+    # user_guess_embeddings = embedding_model.encode(user_guess)
 
     try:
         # score = float(response.text.strip())
         print(f"Hidden word : {hidden_word}")
-        score = similarity_score(hidden_word_embeddings, user_guess_embeddings)
+        # score = similarity_score(hidden_word_embeddings, user_guess_embeddings)
+        score = similarity_score(embeddings[0], embeddings[1])
         # round the score to be out of 10 and with only one number after the dot
         score = round(score * 10, 1)
+        score = round(score * 2 - 10, 1)
     except ValueError:
         # If conversion fails, provide a default score or handle the error
         score = 0.0
