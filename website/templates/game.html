@@ -73,8 +73,34 @@
             border: 1px solid #b2ebf2;
             border-radius: 5px;
         }
+
+         #roomInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-weight: bold;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
     <script>
+        var socketio = io();
+
+        socketio.on('connect', function() {
+            var room = "{{ code }}";
+            socketio.emit('join', {'room': room});
+        });
+
+        socketio.on('update_users', function(data) {
+            document.getElementById('numUsers').innerText = 'Users in Room: ' + data.num_users;
+        });
+
+        window.onbeforeunload = function() {
+            var room = "{{ code }}";
+            socketio.emit('leave', {'room': room});
+        };
+
         function startGame() {
             fetch('/start_game', { method: 'POST' })
                 .then(response => response.json())
@@ -117,6 +143,10 @@
 <body>
     <div class="container">
         <h1>🎮 Word Guess Game</h1>
+        <!-- Room Information -->
+        <div class="alert alert-info" role="alert">
+            Room Code: {{ code }} | <span id="numUsers">Users in Room: 1</span>
+        </div>
         <!-- Navigation Buttons -->
         <div class="mb-3">
             <a class="btn btn-secondary" href="/" role="button">Back to Home</a>
