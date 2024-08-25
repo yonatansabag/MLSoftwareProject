@@ -5,8 +5,11 @@ from flask_login import UserMixin
 client = MongoClient('mongodb://localhost:27017/')
 db_users = client['Users']
 db_words = client['Words']
+db_guesses = client['Guess']
 collection = db_users['Users']
 game = db_words["Words"]
+guesses = db_guesses['Guess']
+
 
 class User(UserMixin):
     """
@@ -14,7 +17,6 @@ class User(UserMixin):
     """
 
     def __init__(self, username=None, password=None):
-
         self.username = username
         self.password = password
 
@@ -53,8 +55,7 @@ class User(UserMixin):
         }
         collection.insert_one(user_document)
         return cls(username=username, password=password)
-    
-    
+
     def get_id(self):
         """
         Return the unique identifier for the user. Flask-Login uses this method
@@ -64,6 +65,7 @@ class User(UserMixin):
             str: The user's username as the unique identifier.
         """
         return self.username
+
 
 class WordDatabase():
     """
@@ -75,7 +77,6 @@ class WordDatabase():
 
     @classmethod
     def get(cls, word):
-
         word_data = game.find_one({"word": word})
         if word_data:
             return cls(word=word_data['word'])
@@ -83,8 +84,6 @@ class WordDatabase():
 
     @classmethod
     def add_word(cls, word):
-
-
         word_doc = {
             'word': word,
         }
@@ -92,5 +91,38 @@ class WordDatabase():
         return cls(word=word)
 
     def get_id(self):
-
         return self.word
+
+
+class GuessesDatabase():
+    """
+    Represents a word in the MongoDB database.
+    """
+
+    def __init__(self, guess=None, score=None):
+        self.guess = guess
+        self.score = score
+
+    @classmethod
+    def add_word(cls, guess, score):
+        word_doc = {
+            'guess': guess,
+            'score': score
+        }
+        guesses.insert_one(word_doc)
+        return cls(guess=guess, score=score)
+
+    def get_id(self):
+        return self.guess
+
+    @classmethod
+    def print_all(cls):
+        """
+        Prints all documents in the MongoDB collection.
+        """
+        # Fetch all documents from the collection
+        all_documents = list(guesses.find({}))
+        # Print each document
+        result = [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in all_documents]
+        # print(result)
+        return result
