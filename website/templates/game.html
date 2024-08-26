@@ -124,35 +124,36 @@
                 });
         }
         function fetchWords() {
-    fetch('/all_words')
-        .then(response => response.json())
-        .then(data => {
-            const wordsList = document.getElementById('wordsList');
-            wordsList.innerHTML = '';  // Clear the list
+            fetch('/all_words')
+                .then(response => response.json())
+                .then(data => {
+                    const wordsList = document.getElementById('wordsList');
+                    wordsList.innerHTML = '';  // Clear the list
 
-            // Check if data is an array
-            if (Array.isArray(data)) {
-                data.forEach(entry => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = `Guess: ${entry.guess}, Score: ${entry.score}`;
-                    wordsList.appendChild(listItem);
+                    if (Array.isArray(data)) {
+                        data.forEach(entry => {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = `Guess: ${entry.guess}, Score: ${entry.score}`;
+                            wordsList.appendChild(listItem);
+                        });
+                    } else {
+                        console.error('Expected an array of objects from the server');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching words:', error);
                 });
-            } else {
-                console.error('Expected an array of objects from the server');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching words:', error);
-        });
-}
-
-
-
+        }
     </script>
 </head>
 <body>
     <div class="container">
         <h1>🎮 Word Guess Game</h1>
+        <!-- Display the room code -->
+        <div class="mb-3">
+            <h2>Room Code: {{ session['room'] }}</h2>
+            <p>Share this room code with others to join!</p>
+        </div>
         <!-- Navigation Buttons -->
         <div class="mb-3">
             <a class="btn btn-secondary" href="/" role="button">Back to Home</a>
