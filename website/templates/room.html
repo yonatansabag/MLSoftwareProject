@@ -3,21 +3,42 @@
 {% block title %}Find Room{% endblock %}
 
 {% block content %}
-    <form method="post">
+    <form method="post" action="/roomjoin">
         <h3>Enter or Create Game Room</h3>
-        <div>
-            <label>Name:</label>
-            <input type="text" placeholder="Your name goes here" name="name" value="{{ name }}"/>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" class="form-control" placeholder="Your name goes here" name="name" value="{{ name }}"/>
         </div>
-        <div class="join">
-            <input type="text" placeholder="Room Code" name="code" value="{{ code }}"/>
-            <button type="submit" name="join" >Join a Room</button>
+        <div class="form-group">
+            <label for="code">Room Code:</label>
+            <input type="text" id="code" class="form-control" placeholder="Room Code" name="code" value="{{ code }}"/>
         </div>
-        <button type="submit" name="create">Create a Room</button>
+        <div class="form-group">
+            <button type="submit" name="join" class="btn btn-primary">Join a Room</button>
+            <button type="submit" name="create" class="btn btn-success">Create a Room</button>
+        </div>
         {% if error %}
-        <ul>
-            <li>{{ error }}</li>
-        </ul>
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
         {% endif %}
     </form>
+
+    <!-- Add Socket.IO script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Socket.IO connection
+            const socket = io();
+
+            // Listen for the 'game_started' event
+            socket.on('game_started', function(data) {
+                if (data.game_started) {
+                    // Redirect to the guessing page with the room code
+                    const roomCode = '{{ code }}'; // Use the room code from the input field or session
+                    window.location.href = '/guessing?room_code=' + roomCode;
+                }
+            });
+        });
+    </script>
 {% endblock %}

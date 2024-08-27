@@ -14,7 +14,13 @@ import cohere
 from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
-from website.app import create_socketio
+from .app import socketio
+#import socketio from main.py
+
+
+
+# from website.app import create_socketio
+
 
 # Create a Flask Blueprint named 'views'
 views = Blueprint('views', __name__)
@@ -218,7 +224,7 @@ def generate_unique_code(length):
 
 @views.route('/roomjoin', methods=['POST', 'GET'])
 @login_required
-def room_join():
+def roomjoin():
     """
     Route to find or create a game room.
 
@@ -227,44 +233,57 @@ def room_join():
     """
     session.clear()
     if request.method == "POST":
+        print("It's post method")
         name = request.form.get("name")
         code = request.form.get("code")
-        join = request.form.get("join", False)
-        create = request.form.get("create", False)
+        join = 'join' in request.form
+        create = 'create' in request.form
 
+        # Validate that the user has entered a name
+        # print(f"create is : {create} of type {type(create)}")
         if not name:
             return render_template('room.html', error="Please enter a name", code=code, name=name)
-        if join != False and not code:
+
+        # Check if the user wants to join an existing room
+        if join and not code:
             return render_template('room.html', error="Please enter a room code", code=code, name=name)
 
         room = code
-        if create != False:
-            room = generate_unique_code(4)
-            rooms[room] = {"members": 0}
-        elif code not in rooms:
-            return render_template('room.html', error="Room does not exist", code=code, name=name)
 
-        session["room"] = room
-        session["name"] = name  # TODO: store user data in session, should be changed to DB or coockies or w.e
-        return redirect(url_for('views.game'))
+        # Check if the user wants to create a new room
+        if create:
+            print("hello, i'm under the water, please help me")
+            room = generate_unique_code(4)
+            rooms[room] = {"members": 1, "game_started": False}
+            session["room"] = room
+            session["name"] = name
+            return redirect(url_for('views.game', room_code=room))
+        if join:
+            # Check if the room code exists when trying to join a room
+            if code not in rooms:
+                return render_template('room.html', error="Room does not exist", code=code, name=name)
+            rooms[code]["members"] += 1
+            session["room"] = code
+            session["name"] = name
+            return redirect(url_for('views.game', room_code=code))
+
+
+        # # Store the room and name in session
+        # session["room"] = room
+        # session["name"] = name  # Store user data in session temporarily
+        #
+        # # Redirect to the game page after room creation or joining
+        # return redirect(url_for('views.game', room_code=room))
 
     return render_template('room.html')
 
 
-@views.route('/game', methods=['GET'])
-@login_required
+@views.route('/game', methods=['GET', 'POST'])
 def game():
-    """
-    Route to serve the game page.
-
-    Returns:
-        Template: 'game.html'
-    """
-    room = session.get("room")
-    if room is None or session.get("name") is None or room not in rooms:
-        return redirect(url_for("views.home"))  # MAYBE WITHOUT views. just home
-
-    return render_template('game.html', code=room)
+    room = session.get('room')
+    if room is None or room not in rooms:
+        return redirect(url_for('views.roomjoin'))
+    return render_template('game.html', room=room)
 
 
 def setup_socketio_handlers(socketio):
@@ -315,6 +334,8 @@ def setup_socketio_handlers(socketio):
             print(f'{name} has left room {room}')
 
 
+
+
 @views.route('/start_game', methods=['POST'])
 def start_game():
     """
@@ -323,7 +344,16 @@ def start_game():
     Returns:
         JSON Response: Confirmation of game start.
     """
-    # model = genai.GenerativeModel('gemini-1.5-flash')
+    room = session.get("room")
+
+    if room is None or room not in rooms:
+        return jsonify({"error": "Room not found"}), 400
+
+    # Check if the game is already started
+    if rooms[room].get('game_started', False):
+        return jsonify({"message": "Game already started!", "hidden_word": rooms[room]['hidden_word']}), 200
+
+    # Generate the hidden word
     model = genai.GenerativeModel('gemini-pro')
     generation_config = genai.GenerationConfig(
         stop_sequences=None,
@@ -345,20 +375,26 @@ def start_game():
             contents=prompt,
             generation_config=generation_config,
             stream=False,
-        ).text
+        ).text.strip()
+
         # Check if the word already exists in the database
         if not WordDatabase.get(hidden_word.lower()):
             # If it doesn't exist, add it to the database
             WordDatabase.add_word(hidden_word.lower())
-            print(f"Hidden word : {hidden_word}")
-            # scores = list(game.find({}))
+            print(f"Hidden word: {hidden_word}")
             break
         else:
             # If it exists, generate a new word
             continue
 
-    session['hidden_word'] = hidden_word
-    session['game_over'] = False
+    # Update room state
+    rooms[room]['hidden_word'] = hidden_word
+    rooms[room]['game_started'] = True
+    rooms[room]['game_over'] = False
+
+    # Notify users that the game has started
+    socketio.emit('game_started', {'game_started': True, 'hidden_word': hidden_word}, room=room)
+
     return jsonify({"message": "Game started! Make your guess."})
 
 
@@ -370,9 +406,14 @@ def guess():
     Returns:
         JSON Response: Distance between the guessed word and the hidden word.
     """
-    if 'hidden_word' not in session or session['game_over']:
+    room = session.get("room")
+    if room is None or room not in rooms or rooms[room].get('game_over'):
         return make_response(jsonify({'error': {'code': 400, 'message': 'Game not started or already over'}}), 400)
 
+    # if 'hidden_word' not in session or session['game_over']:
+    #     return make_response(jsonify({'error': {'code': 400, 'message': 'Game not started or already over'}}), 400)
+
+    hidden_word = rooms[room].get('hidden_word')
     user_guess = request.json.get('guess', '')
     GuessesDatabase.print_all()
     if not user_guess:
@@ -393,7 +434,6 @@ def guess():
         score = (1 + cosine_sim) / 2
         return score
 
-    hidden_word = session['hidden_word']
     hidden_word = hidden_word.replace('\n', '').strip()
     texts = [hidden_word, user_guess]
     embeddings = co.embed(texts=texts, input_type="search_document", model="embed-english-v3.0").embeddings

@@ -12,7 +12,8 @@ from mongo.mongo_config import db
 from mongo.mongo_users import User, game
 from flask_socketio import SocketIO
 
-
+# app = Flask(__name__)
+socketio = SocketIO()
 
 from werkzeug.security import generate_password_hash
 
@@ -42,6 +43,7 @@ def create_app():
         Flask: Configured Flask application instance.
     """
     app = Flask(__name__)
+    socketio.init_app(app)
     app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'  # Secret key for session management
     app.config['SUCCESS'] = 0  # Counter for successful operations
     app.config['FAILURE'] = 0  # Counter for failed operations
@@ -113,10 +115,10 @@ def create_socketio(app):
 
 def run_server():
     app = create_app()
-    socketio = create_socketio(app)
+    # socketio = create_socketio(app)
 
     from website.views import setup_socketio_handlers
     setup_socketio_handlers(socketio)
 
-    return app,socketio
+    return app, socketio
 
