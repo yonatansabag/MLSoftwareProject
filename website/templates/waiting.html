@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting for Everyone</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        .container {
+            text-align: center;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+        }
+        .container h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .container p {
+            color: #666;
+            font-size: 18px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.3em;
+            border-top-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h1>Waiting for Everyone to Enter the Room</h1>
+        <h2>Room Code: {{ session['room'] }}</h2>
+        <p>Please be patient while we wait for all players to join.</p>
+    </div>
+    <script>
+        function pollGameStatus() {
+            fetch('/check_game_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.game_started) {
+                        window.location.href = '/game';  // Redirect to the game page when the game starts
+                    } else {
+                        setTimeout(pollGameStatus, 5000);  // Poll every 5 seconds
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking game status:', error);
+                    setTimeout(pollGameStatus, 5000);  // Retry on error
+                });
+        }
+
+        // Start polling when the page loads
+        document.addEventListener('DOMContentLoaded', (event) => {
+            pollGameStatus();
+        });
+    </script>
+</body>
+</html>

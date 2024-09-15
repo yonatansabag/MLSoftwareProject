@@ -20,6 +20,7 @@
         .button-group-game,
         .button-group-game,
         .button-group,
+        .startGameButton,
         .table-container {
             display: none;
         }
@@ -168,25 +169,27 @@
             display: block;
             margin: 20px auto;
         }
-    </style>
-    
-       <script>
-        function startGame() {
-        fetch('/start_game', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('guess').disabled = false;
-                document.getElementById('submitGuess').disabled = false;
-                document.getElementById('endGame').disabled = false;
-
-                // Show hidden elements
-                document.getElementById('gameStatus').style.display = 'block';
-                document.querySelector('.form-group').style.display = 'block';
-                document.querySelector('.button-group-game').style.display = 'flex';
-                document.querySelector('.table-container').style.display = 'block';
-                document.getElementById('startGameButton').style.display = 'none';
-            });
-        }
+        </style>
+        <script>
+         function startGame() {
+         fetch('/start_game', { method: 'POST' })
+             .then(response => response.json())
+             .then(data => {
+                 document.getElementById('guess').disabled = false;  
+                 document.getElementById('submitGuess').disabled = false;
+                 document.getElementById('endGame').disabled = false;
+ 
+                 // Show hidden elements
+                 document.getElementById('gameStatus').style.display = 'block';
+                 document.querySelector('.form-group').style.display = 'block';
+                 document.querySelector('.button-group-game').style.display = 'flex';
+                 document.querySelector('.table-container').style.display = 'block';
+                 document.getElementById('startGameButton').style.display = 'none';
+             });
+         }
+         document.addEventListener('DOMContentLoaded', function () {
+            startGame();  // Automatically starts the game when the page loads
+        });
         function makeGuess() {
             const guess = document.getElementById('guess').value;
             fetch('/guess', {
@@ -203,6 +206,7 @@
                 }
                 fetchWords();  // Call fetchWords to update the list
                 fetchGuess();
+                fetchWinners();
                 document.getElementById('gameStatus').style.display = 'none';
             });
         }
@@ -314,6 +318,31 @@
                 });
         }
 
+        function fetchWinners() {
+            fetch('/winner_list')  
+                .then(response => response.json())
+                .then(data => {
+                    const winnerList = document.getElementById('winnerList');
+                    winnerList.innerHTML = '';  // Clear the table body
+
+                    if (Array.isArray(data)) {
+                        data.forEach(winner => {
+                            const row = document.createElement('tr');
+                            
+                            const winnerCell = document.createElement('td');
+                            winnerCell.textContent = winner;  // Each entry is a winner's name
+                            row.appendChild(winnerCell);
+
+                            winnerList.appendChild(row);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching winners:', error);
+                });
+        }
+
+
 
     </script>
 </head>
@@ -325,10 +354,9 @@
         </div>
         <h1>🎮 Word Guess Game</h1>
         <div class="mb-3" style="display: flex; justify-content: center; flex-direction: column; align-items: center; text-align: center;">
-            <h2>Room Code: {{ session['room'] }}</h2>
             <p>Share this room code with others to join!</p>
         </div>
-        <button class="btn btn-primary btn-large centered-button" onclick="startGame()">Start Game</button>
+        <!-- <button class="btn btn-primary btn-large centered-button" onclick="startGame()">Start Game</button> -->
         <div id="gameStatus">Submit your guess</div>
         <div class="form-group">
             <input type="text" id="guess" placeholder="Enter your guess here" disabled>
@@ -365,7 +393,7 @@
                     <h3>Winner List</h3>
                     <table>
                         <thead>
-                            <tr><th>Guess</th><th>Score</th></tr>
+                            <tr><th>Winners</th></tr>
                         </thead>
                         <tbody id="winnerList"></tbody>
                     </table>

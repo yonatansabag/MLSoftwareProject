@@ -1,10 +1,8 @@
 from website.app import run_server
 
+IP = "0.0.0.0"
+WEB_PORT = 8000
 app,socketio = run_server()
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', debug=True)
-
-    socketio.run(app, debug=True)
-
-
+    socketio.run(app, debug=True, host=IP, port=WEB_PORT, use_reloader=False, allow_unsafe_werkzeug=True)
