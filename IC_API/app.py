@@ -36,7 +36,6 @@ def create_app():
 
     def process_image_in_background(image_data, request_id):
         try:
-            print("IM HERE")
             result = describe_image(image_data)
             results_collection.update_one(
                 {"request_id": request_id},
@@ -69,10 +68,10 @@ def create_app():
             result = [{"name": response.text, "score": '0.885'}]
             return result
         except Exception as e:
-            return {'error': str(e)}
+            return {'error': "Big balagan"}
 
-    @app.route('/classify_sync', methods=['POST'])
-    def classify_image_sync():
+    @app.route('/upload_sync', methods=['POST'])
+    def upload_image_sync():
         if 'image' not in request.files:
             return make_response(jsonify({'error': {'code': 400, 'message': 'Api did not receive image'}}), 400)
 
@@ -94,8 +93,8 @@ def create_app():
             error_message = f'Failed to process file: {str(e)}'
             return make_response(jsonify({'error': {'code': 500, 'message': error_message}}), 500)
 
-    @app.route('/classify_async', methods=['POST'])
-    def classify_image_async():
+    @app.route('/upload_async', methods=['POST'])
+    def upload_image_async():
         if 'image' not in request.files:
             return make_response(jsonify({'error': {'code': 400, 'message': 'Api did not receive image'}}), 400)
 
@@ -173,8 +172,9 @@ def retrieve_result(req_id):
     """
     # Retrieve result from MongoDB
     classification = results_collection.find_one({"request_id": req_id})
-    print(classification)
     if classification:
+        #if matches is not in classification, return empty list
+
         matches = classification['result']
         return {
             'status': classification.get('status', 'unknown'),

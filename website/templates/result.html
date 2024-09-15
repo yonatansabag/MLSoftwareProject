@@ -12,7 +12,7 @@
         <div class="description">
             <h2>Description:</h2>
             {% if result.matches and result.matches|length > 0 %}
-                <p>{{ result.matches[0].name | replace("\n", " ") | trim }}</p>
+                <p>{{ result.matches[0].name | replace("\n", " ") | trim }}</p>`
                 <p class="score">Confidence Score: {{ "%.2f"|format(result.matches[0].score|float * 100) }}%</p>
             {% else %}
                 <p>No matches found.</p>

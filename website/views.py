@@ -36,180 +36,6 @@ co = cohere.Client("asNorrF7zKKhnbbpYVB0VZIs1UHu4MnTV1O3gXXe")
 rooms = {}  # TODO: move to DB ??
 
 
-# current_app.config['SECRET_KEY'] = 'safasfsa'
-
-# @views.route('/', methods=['GET', 'POST'])
-# def home():
-#     """
-#     Route for the home page.
-
-#     GET: Renders 'home.html' template.
-#     POST: Increments 'SUCCESS' counter in current app configuration.
-
-#     Returns:
-#         Template: 'home.html'
-#     """
-#     current_app.config['SUCCESS'] += 1
-#     return render_template("home.html", user=current_user)
-
-
-# def describe_image(image_path):
-#     """
-#     Generates a textual description of an image using generative AI.
-
-#     Args:
-#         image_path (str): Path to the image file.
-
-#     Returns:
-#         str: Generated description of the image.
-#     """
-#     # TODO: Check if path is fined or need to send image
-#     text_prompt = "Describe the image"
-#     image = Image.open(image_path)
-#     prompt = [text_prompt, image]
-#     response = model.generate_content(prompt)
-#     if not response.text:
-#         # self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
-#         return {'error': 'Failed to generate description'}
-#     return response.text
-
-
-# @views.route('/upload_image', methods=['GET', 'POST'])
-# @login_required
-# def upload_image():
-#     """
-#     Route for uploading an image and generating its description.
-
-#     GET: Renders 'index.html' template for uploading images.
-#     POST:
-#         - Checks if an image file is present.
-#         - Saves the uploaded file to 'uploads' directory.
-#         - Validates file format (PNG, JPG, JPEG).
-#         - Calls 'describe_image()' to generate description.
-#         - Returns JSON response with generated description.
-
-#     Returns:
-#         Template: 'index.html' (GET)
-#         JSON Response: Description of the uploaded image (POST)
-#     """
-#     if request.method == 'POST':
-#         if 'image' not in request.files:
-#             current_app.config['FAILURE'] += 1
-#             return make_response(jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400)
-
-#         file = request.files['image']
-#         if file.filename == '':
-#             current_app.config['FAILURE'] += 1
-#             return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
-
-#         if file:
-#             filename = secure_filename(file.filename)
-#             file_path = os.path.join('uploads', filename)
-#             file.save(file_path)
-#             allowed_extensions = ['png', 'jpg', 'jpeg']
-#             content_type = file.content_type
-
-#             if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions \
-#                     or content_type not in ['image/png', 'image/jpeg', 'image/jpg']:
-#                 current_app.config['FAILURE'] += 1
-#                 return make_response(jsonify({'error': {'code': 400, 'message': 'Image is not PNG, JPG, or JPEG'}}),
-#                                      400)
-
-#             description = describe_image(file_path)
-#             description = description.split('. ')
-#             result_string = '.\n'.join(description)
-#             current_app.config['SUCCESS'] += 1
-#             return make_response(jsonify({'matches': [{'name': result_string, 'score': 0.5}]}), 200)
-#     return render_template('index.html')
-
-
-# @views.route('/status', methods=['GET'])
-# def status():
-#     """
-#     Route for fetching application status.
-
-#     Returns:
-#         JSON Response: Application uptime, success and failure counts, health status, and API version.
-#     """
-#     # TODO: Modify data to follow processes of upload image async
-#     current_app.config['SUCCESS'] += 1
-#     data = {
-#         'uptime': time.time() - current_app.config['START_TIME'],
-#         'processed': {
-#             'success': current_app.config['SUCCESS'],
-#             'fail': current_app.config['FAILURE'],
-#             'running': 0,
-#             'queued': 0,
-#         },
-#         'health': 'ok',
-#         'api_version': 0.21,
-#     }
-#     return make_response(jsonify(data), 200)
-
-
-# @views.route('/result/<request_id>', methods=['GET'])
-# @login_required
-# def result(request_id):
-#     """
-#     Route for fetching results based on request ID.
-
-#     Args:
-#         request_id (str): ID of the request.
-
-#     Returns:
-#         JSON Response: Error message indicating ID not found (HTTP 404).
-#     """
-#     return make_response(jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404)
-
-
-# @views.route('/async_upload', methods=['POST'])
-# def async_upload_image():
-#     if 'image' not in request.files:
-#         return make_response(jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400)
-
-#     file = request.files['image']
-#     if file.filename == '':
-#         return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
-
-#     if file:
-#         filename = secure_filename(file.filename)
-#         file_path = os.path.join('uploads', filename)
-#         file.save(file_path)
-#         allowed_extensions = ['png', 'jpg', 'jpeg']
-#         content_type = file.content_type
-
-#         if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions or content_type not in [
-#             'image/png', 'image/jpeg']:
-#             return make_response(jsonify({'error': {'code': 400, 'message': 'Image is not PNG or JPEG'}}), 400)
-
-#         # Send image to the classification API
-#         response = requests.post(
-#             'http://api_server:8000/classify',  # API endpoint
-#             files={'image': file}  # Send the image as file
-#         )
-
-#         if response.status_code == 200:
-#             result = response.json()
-#             return render_template('result.html', result=result)
-#         else:
-#             return 'Classification failed', 500
-
-
-# @views.route('/result/<req_id>', methods=['GET'])
-# def get_result(req_id):
-#     # Send image to the classification API
-#     response = requests.post(
-#         'http://api_server:8000/get_res',
-#         files={'req_id': req_id}
-#     )
-#     return jsonify(response)
-
-#     # if response.status_code == 200:
-#     #     result = response.json()
-#     #     return render_template('result.html', result=result)
-#     # else:
-#     #     return 'Classification failed', 500
-
 @views.route('/', methods=['GET', 'POST'])
 def home():
     """
@@ -227,7 +53,7 @@ def home():
 
 def describe_image(image_path):
     """
-    Generates a textual description of an image using generative AI.
+    Generates a textual description of   an image using generative AI.
 
     Args:
         image_path (str): Path to the image file.
@@ -245,45 +71,11 @@ def describe_image(image_path):
         return {'error': 'Failed to generate description'}
     return response.text
 
-
-@views.route('/sync_upload_image', methods=['POST', 'GET'])
-@login_required
-def sync_upload_image():
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            current_app.config['FAILURE'] += 1
-            return make_response(jsonify({'error': {'code': 400, 'message': 'No file part'}}), 400)
-
-        file = request.files['image']
-        if file.filename == '':
-            current_app.config['FAILURE'] += 1
-            return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
-
-        if file:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join('uploads', filename)
-            file.save(file_path)
-            ###
-            response = requests.post(
-                'http://192.168.1.127:5000/classify_sync',
-                files={'image': open(file_path, 'rb')}
-            )
-            print(f"response is : {response.json()}")
-            if response.status_code == 200:
-                current_app.config['SUCCESS'] += 1
-                result = response.json()
-                return make_response(jsonify(result), 200)
-            else:
-                return make_response(jsonify({'error': {'code': 500, 'message': 'Failed to classify image'}}), 500)
-    else:
-        return render_template('sync_upload.html')
-
-
-@views.route('/async_upload_image', methods=['POST', 'GET'])
-@login_required
-def async_upload_image():
+@views.route('/classify_image', methods=['POST', 'GET'])
+@login_required 
+def classify_image():
     if request.method == 'GET':
-        return render_template('async_upload.html')
+        return render_template('classify_image.html')
 
     if request.method == 'POST':
         if 'image' not in request.files:
@@ -293,34 +85,46 @@ def async_upload_image():
         if file.filename == '':
             return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
 
-
         if file:
             filename = secure_filename(file.filename)
             file_path = os.path.join('uploads', filename)
             file.save(file_path)
 
-            try:
+            is_async = request.form.get('is_async', 'false').lower() == 'true'
+
+            if is_async:
+                try:
+                    response = requests.post(
+                        'http://127.0.0.1:5000/upload_async',
+                        files={'image': open(file_path, 'rb')}
+                    )
+                    if response.status_code == 202:
+                        result = response.json()
+                        request_id = result.get('request_id')
+                        return make_response(jsonify({'request_id': request_id}), 202)
+                    else:
+                        return make_response(jsonify({'error': {'code': 500, 'message': 'Failed to classify image'}}), 500)
+                except Exception as e:
+                    return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
+            else:
                 response = requests.post(
-                    'http://192.168.1.127:5000/classify_async',
+                    'http://127.0.0.1:5000/upload_sync',
                     files={'image': open(file_path, 'rb')}
                 )
-
-                if response.status_code == 202:
+                if response.status_code == 200:
+                    current_app.config['SUCCESS'] += 1
                     result = response.json()
-                    request_id = result.get('request_id')
-                    return make_response(jsonify({'request_id': request_id}), 202)
+                    return make_response(jsonify(result), 200)
                 else:
                     return make_response(jsonify({'error': {'code': 500, 'message': 'Failed to classify image'}}), 500)
-            except Exception as e:
-                return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
-        else:
-            return make_response(jsonify({'error': {'code': 400, 'message': 'No file uploaded'}}), 400)
+
+        return make_response(jsonify({'error': {'code': 400, 'message': 'No file uploaded'}}), 400)
 
 
 @views.route('/result/<request_id>', methods=['GET'])
 @login_required
 def get_result(request_id):
-    response = requests.get(f'http://192.168.1.127:5000/result/{request_id}')
+    response = requests.get(f'http://127.0.0.1:5000/result/{request_id}')
 
     if response.status_code == 200:
         result = response.json()
@@ -397,11 +201,13 @@ def roomjoin():
 
         # Check if the user wants to create a new room
         if create:
+            num_players = request.form.get("num_players")
             room = generate_unique_code(4)
-            rooms[room] = {"members": 1, "game_started": False}
+            rooms[room] = {"members": 1, "game_started": False, "game_starter": name, "num_players_in_room" : num_players, 'winners': []}
             session["room"] = room
             session["name"] = name
-            return redirect(url_for('views.game', room_code=room))
+            return redirect(url_for('views.waiting',room_code=code))
+        
         if join:
             # Check if the room code exists when trying to join a room
             if code not in rooms:
@@ -411,15 +217,11 @@ def roomjoin():
             session["name"] = name
             return redirect(url_for('views.game', room_code=code))
 
-
-        # # Store the room and name in session
-        # session["room"] = room
-        # session["name"] = name  # Store user data in session temporarily
-        #
-        # # Redirect to the game page after room creation or joining
-        # return redirect(url_for('views.game', room_code=room))
-
     return render_template('room.html')
+
+@views.route('/waiting')
+def waiting():
+    return render_template('waiting.html')
 
 
 @views.route('/game', methods=['GET', 'POST'])
@@ -477,10 +279,20 @@ def setup_socketio_handlers(socketio):
             send({"name": name, "message": "has left the room"}, to=room)
             print(f'{name} has left room {room}')
 
+@views.route('/check_game_status')
+def check_game_status():
+    room = session.get("room")
+    if not room or room not in rooms:
+        return jsonify({"error": "Invalid room code or not joined"}), 404
+    # Here is where the KeyError occurs 
+    if int(rooms[room]['members']) == int(rooms[room]['num_players_in_room']):  
+        return jsonify({"game_started": True})
+    else:
+        return jsonify({"game_started": False})
 
-
-
+            
 @views.route('/start_game', methods=['POST'])
+# @socketio.on('start_game')
 def start_game():
     """
     Route to start a new game. It generates a hidden word and stores it in the session.
@@ -491,12 +303,10 @@ def start_game():
     room = session.get("room")
     if room is None or room not in rooms:
         return jsonify({"error": "Room not found"}), 400
-
-    # Check if the game is already started
-    if 'hidden_word' not in rooms[room].keys():
-        rooms[room]['game_started'] = True
-    if rooms[room].get('game_started')==False:
-        return jsonify({"message": "Game already started!", "hidden_word": rooms[room]['hidden_word']}), 200
+    
+    if int(rooms[room]['members']) != int(rooms[room]['num_players_in_room']):
+        
+        return jsonify({"error": "Not enough people"}), 403
 
     # Generate the hidden word
     model = genai.GenerativeModel('gemini-pro')
@@ -515,22 +325,16 @@ def start_game():
     word with no additional characters, spaces, line breaks, or formatting."""
 
     while True:
-        # Generate a word
         hidden_word = model.generate_content(
             contents=prompt,
             generation_config=generation_config,
             stream=False,
         ).text.strip()
 
-        # Check if the word already exists in the database
         if not WordDatabase.get(hidden_word.lower()):
-            # If it doesn't exist, add it to the database
             WordDatabase.add_word(hidden_word.lower())
             print(f"Hidden word: {hidden_word}")
             break
-        else:
-            # If it exists, generate a new word
-            continue
 
     # Update room state
     rooms[room]['hidden_word'] = hidden_word
@@ -538,7 +342,7 @@ def start_game():
     rooms[room]['game_over'] = False
 
     # Notify users that the game has started
-    socketio.emit('game_started', {'game_started': True, 'hidden_word': hidden_word}, room=room)
+    socketio.emit('game_started', {'hidden_word': hidden_word}, room=room)
 
     return jsonify({"message": "Game started! Make your guess."})
 
@@ -582,8 +386,6 @@ def guess():
     hidden_word = hidden_word.replace('\n', '').strip()
     texts = [hidden_word, user_guess]
     embeddings = co.embed(texts=texts, input_type="search_document", model="embed-english-v3.0").embeddings
-    # hidden_word_embeddings = embedding_model.encode(hidden_word)
-    # user_guess_embeddings = embedding_model.encode(user_guess)
 
     try:
         # score = float(response.text.strip())
@@ -594,7 +396,11 @@ def guess():
         score = round(score * 10, 1)
         score = round(score * 2 - 10, 1)
         name = session.get('name')
-        GuessesDatabase.add_word(name, user_guess, score)
+        if score < 10:
+            GuessesDatabase.add_word(name, user_guess, score)
+        else:
+            rooms[room]['winners'].append(session.get('name'))
+            
     except ValueError:
         # If conversion fails, provide a default score or handle the error
         score = 0.0
@@ -615,11 +421,14 @@ def guess():
 @views.route('/best_guess', methods=['GET'])
 def best_guess():
     words = GuessesDatabase.get_best()
-    name = session.get('name')
-    if words[0]['score'] == 10:
-        words = [{'message': f'{name} guessed the word correctly!'}]
     return jsonify(words)
-
+        
+@views.route('/winner_list', methods=['GET'])
+def winners():
+    print('in winners')
+    room = session.get('room')
+    return jsonify(rooms[room]['winners'])
+    
 @views.route('/user_guesses', methods=['GET'])
 def all_guesses():
     name = session.get('name')
@@ -638,7 +447,6 @@ def end_game():
     rooms[room]['game_started']= True
     hidden_word_room = rooms[room]['hidden_word']
     hidden_word = session.pop('hidden_word', None)
-    # jsons = ({'message': 'Game ended.', 'hidden_word': hidden_word})
     if hidden_word:
         hidden_word = hidden_word.replace('\n', '').strip()
     session['game_over'] = True
