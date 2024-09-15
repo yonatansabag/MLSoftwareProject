@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Result{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="result-box">
+        <h1>Result</h1>
+        {% if request_id %}
+            <p class="request-id">Request ID: {{ request_id }}</p>
+        {% endif %}
+        <div class="description">
+            <h2>Description:</h2>
+            {% if result.matches and result.matches|length > 0 %}
+                <p>{{ result.matches[0].name | replace("\n", " ") | trim }}</p>
+                <p class="score">Confidence Score: {{ "%.2f"|format(result.matches[0].score|float * 100) }}%</p>
+            {% else %}
+                <p>No matches found.</p>
+            {% endif %}
+        </div>
+        {% if result.status %}
+            <p class="status">Status: {{ result.status }}</p>
+        {% endif %}
+        <a href="/" class="back-btn">Go Back</a>
+    </div>
+</div>
+
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 80px auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .result-box {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        color: #ff6f61;
+        margin-bottom: 20px;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .request-id, .status {
+        font-size: 18px;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .description {
+        text-align: left;
+        margin-bottom: 30px;
+    }
+
+    .description h2 {
+        color: #2196F3;
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    .description p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .score {
+        font-weight: bold;
+        color: #4caf50;
+        margin-top: 10px;
+    }
+
+    .back-btn {
+        display: inline-block;
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 20px;
+        font-size: 16px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .back-btn:hover {
+        background-color: #45a049;
+    }
+</style>
+{% endblock %}

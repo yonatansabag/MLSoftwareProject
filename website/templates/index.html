@@ -1,190 +1,76 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Your Image</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px; /* Increased the width */
-            margin: 0 auto;
-            padding: 40px; /* Increased padding */
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-top: 50px;
-            position: relative;
-        }
-
-        h1 {
-            color: #ff5733;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            color: #333333;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-
-        input[type="file"] {
-            margin-bottom: 10px;
-            display: none;
-        }
-
-        .file-input-label {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            text-align: center;
-            text-decoration: none;
-            font-size: 16px;
-            margin-top: 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            display: inline-block;
-        }
-
-        .file-input-label:hover {
-            background-color: #45a049;
-        }
-
-        #result {
-            margin-top: 20px;
-            text-align: left;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        #uploadedImage {
-            max-width: 100%;
-            max-height: 300px;
-            display: none;
-            margin-top: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .home-button, .logout-button {
-            background-color: whitesmoke;
-            color: #362f2f;
-            border: none;
-            padding: 10px;
-            text-align: center;
-            text-decoration: none;
-            font-size: 16px;
-            position: absolute;
-            top: 10px;
-            cursor: pointer;
-        }
-
-        .home-button {
-            right: 100px;
-        }
-
-        .logout-button {
-            right: 10px;
-        }
-
-        .home-button:hover, .logout-button:hover {
-            text-decoration: underline;
-        }
-
-        .progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            border-radius: 5px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .progress-bar {
-            width: 0%;
-            height: 20px;
-            background-color: #4CAF50;
-            border-radius: 5px;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-        }
+        /* Styles omitted for brevity */
     </style>
     <script>
-        function uploadImage() {
+        function uploadImage(isAsync) {
             const fileInput = document.getElementById('file');
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('image', file);
 
+            const endpoint = isAsync ? '/async_upload_image' : '/sync_upload_image';
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/async_upload_image', true);
-
-            xhr.upload.onprogress = function (event) {
-                if (event.lengthComputable) {
-                    const percentComplete = (event.loaded / event.total) * 100;
-                    const progressBar = document.querySelector('.progress-bar');
-                    progressBar.style.width = percentComplete + '%';
-                    progressBar.innerHTML = Math.floor(percentComplete) + '%';
-                }
-            };
-
-            xhr.onloadstart = function () {
-                document.querySelector('.progress-container').style.display = 'block';
-            };
-
-            xhr.onloadend = function () {
-                document.querySelector('.progress-container').style.display = 'none';
-            };
+            xhr.open('POST', endpoint, true);
 
             xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    const data = JSON.parse(xhr.responseText);
-                    const description = data.matches[0].name;
-                    const splitDescription = description.split('.');
-                    const formattedDescription = splitDescription.join('.\n');
-
-                    document.getElementById('result').innerText = formattedDescription;
-                    const img = document.getElementById('uploadedImage');
-                    img.src = URL.createObjectURL(file);
-                    img.style.display = 'block';
-                    img.onload = () => URL.revokeObjectURL(img.src);
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (isAsync) {
+                            const request_id = data.request_id;
+                            pollResult(request_id);
+                        } else {
+                            const description = data.matches[0].name;
+                            document.getElementById('result').innerText = description;
+                        }
+                    } else {
+                        document.getElementById('result').innerText = 'Error uploading image';
+                    }
                 }
             };
 
             xhr.send(formData);
         }
+
+        function pollResult(request_id) {
+            const pollXhr = new XMLHttpRequest();
+            pollXhr.open('GET', /result/${request_id}, true);
+
+            pollXhr.onreadystatechange = function () {
+                if (pollXhr.readyState === 4) {
+                    if (pollXhr.status === 200) {
+                        const data = JSON.parse(pollXhr.responseText);
+                        if (data.status === 'completed') {
+                            const description = data.matches[0].name;
+                            document.getElementById('result').innerText = description;
+                        } else if (data.status === 'running') {
+                            setTimeout(function () {
+                                pollResult(request_id);
+                            }, 2000); // Poll every 2 seconds
+                        }
+                    }
+                }
+            };
+
+            pollXhr.send();
+        }
     </script>
 </head>
 <body>
     <div class="container">
-        <a href="/" class="home-button">Home</a>
-        <a href="/logout" class="logout-button">Log Out</a>
-        <h1>📷 Hello there, photo uploader!</h1>
-        <h2>Please upload a picture</h2>
-
+        <h1>Upload Your Image</h1>
         <label for="file" class="file-input-label">Choose a file</label>
-        <input type="file" id="file" accept="image/*" onchange="uploadImage()">
-
-        <div class="progress-container">
-            <div class="progress-bar">0%</div>
-        </div>
-
+        <input type="file" id="file" accept="image/*">
+        <br><br>
+        <button onclick="uploadImage(true)">Upload Async</button>
+        <button onclick="uploadImage(false)">Upload Sync</button>
         <div id="result"></div>
-
-        <img id="uploadedImage" src="" alt="Uploaded Image">
     </div>
 </body>
-</html>
+</html> -->

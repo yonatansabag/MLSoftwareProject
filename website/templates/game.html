@@ -1,5 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+
+
+
+{% extends "base.html" %}
+{% block content %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,91 +14,179 @@
       crossorigin="anonymous"
     />
     <style>
+        #gameStatus,
+        #result,
+        .form-group,
+        .button-group-game,
+        .button-group-game,
+        .button-group,
+        .table-container {
+            display: none;
+        }
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            text-align: center;
-            margin: 0;
-            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #e9ecef;
+            color: #374b5f;
         }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-top: 50px;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
         #result {
             margin-top: 20px;
             padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            background-color: #8ed7df;
+            border: 1px solid #132629;
+            border-radius: 15px;
+            font-size: 16px;
+            text-align: center; /* Center the text */
+            width: 30%; 
+            margin-left: auto; /* Center horizontally */
+            margin-right: auto; /* Center horizontally */
+            /* display: block; Ensure it's a block-level element */
         }
 
+    
+        .container {
+            max-width: 1100px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: 40px;
+        }
+    
+        h1 {
+            color: #212529;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 36px;
+            font-weight: bold;
+        }
+    
+        .form-group {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    
+        input[type="text"] {
+            width: 50%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #a0a4a7;
+            display: block;
+            margin: 0 auto;
+            font-size: 16px;
+        }
+    
+        button {
+            padding: 25px 25px;
+            border: none;
+            border-radius: 6px;
+            background-color: #0a1017;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.5s ease;
+        }
+    
+        button:hover {
+            background-color: #0056b3;
+        }
+    
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-bottom: 35px;
+        }
+
+        .button-group-game {
+            display: none;
+            justify-content: center;
+            gap: 10px;
+        }
+    
         #gameStatus {
             margin-top: 20px;
+            margin-bottom: 20px;
             padding: 10px;
-            background-color: #e0f7fa;
-            border: 1px solid #b2ebf2;
-            border-radius: 5px;
+            background-color: #e2f3f5;
+            border: 1px solid #bce2e8;
+            border-radius: 35px;
+            font-size: 16px;
+            text-align: center;
+            width: 50%; 
+            margin-left: auto; /* Center horizontally */
+            margin-right: auto; /* Center horizontally */
         }
-
-        #wordsList {
-            list-style-type: none;
-            padding: 0;
+    
+        .table-container {
+            margin-top: 20px;
         }
-
-        #wordsList li {
-            padding: 5px;
-            border-bottom: 1px solid #ddd;
+    
+        .table-wrapper {
+            margin-bottom: 20px;
+            width: 100%; /* Ensure all tables have the same width */
+        }
+    
+        .tables-row {
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+        }
+    
+        .table-wrapper.small {
+            flex: 1;
+        }
+    
+        .table-wrapper h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+    
+        th, td {
+            padding: 12px;
+            border: 1px solid #bcc7d2;
+            text-align: center;
+            font-size: 16px;
+        }
+    
+        th {
+            background-color: #6382cb;
+            color: #001122;
+        }
+    
+        .btn-large {
+            font-size: 24px;
+            padding: 12px 30px;
+        }
+    
+        .centered-button {
+            display: block;
+            margin: 20px auto;
         }
     </style>
-    <script>
+    
+       <script>
         function startGame() {
-            fetch('/start_game', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('gameStatus').innerText = data.message;
-                    document.getElementById('guess').disabled = false;
-                    document.getElementById('submitGuess').disabled = false;
-                    document.getElementById('endGame').disabled = false;
-                });
-        }
+        fetch('/start_game', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('guess').disabled = false;
+                document.getElementById('submitGuess').disabled = false;
+                document.getElementById('endGame').disabled = false;
 
+                // Show hidden elements
+                document.getElementById('gameStatus').style.display = 'block';
+                document.querySelector('.form-group').style.display = 'block';
+                document.querySelector('.button-group-game').style.display = 'flex';
+                document.querySelector('.table-container').style.display = 'block';
+                document.getElementById('startGameButton').style.display = 'none';
+            });
+        }
         function makeGuess() {
             const guess = document.getElementById('guess').value;
             fetch('/guess', {
@@ -105,12 +196,14 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('result').innerText = `Score: ${data.score}. ${data.message}`;
+                document.getElementById('result').innerText = `${data.message}, Score:  ${data.score}`;
                 if (data.message.includes("Congratulations")) {
                     document.getElementById('guess').disabled = true;
                     document.getElementById('submitGuess').disabled = true;
                 }
                 fetchWords();  // Call fetchWords to update the list
+                fetchGuess();
+                document.getElementById('gameStatus').style.display = 'none';
             });
         }
 
@@ -118,60 +211,168 @@
             fetch('/end_game')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('gameStatus').innerText = `Game ended. The hidden word was '${data.hidden_word}'.`;
+                    // Update the game status with the hidden word
+                    document.getElementById('gameStatus').style.display = 'block';
+                    document.getElementById('gameStatus').innerText = `Game ended. The hidden word was '${data.hidden_word.trim()}'.`;
+                    
+                    // Disable the input and buttons after the game ends
                     document.getElementById('guess').disabled = true;
                     document.getElementById('submitGuess').disabled = true;
+                    document.getElementById('endGame').disabled = true;
+
+                    // Clear the 'Personal Guesses', 'Best Room Guess', and 'Winner List' tables
+                    document.getElementById('personalGuesses').innerHTML = '';
+                    document.getElementById('wordsList').innerHTML = '';
+                    document.getElementById('winnerList').innerHTML = '';
+                    
+                    document.getElementById('startGameButton').style.display = 'block'; // Show the 'Start Game' button
+                    document.getElementById('gameStatus').style.display = 'none !important';
+                    document.querySelector('.form-group').style.display = 'none !important';
+                    document.querySelector('.button-group-game').style.display = 'none !important';
+                    document.querySelector('.table-container').style.display = 'none !important';
+                    
+                })
+                .catch(error => {
+                    console.error('Error ending game:', error); 
                 });
         }
+
         function fetchWords() {
-            fetch('/all_words')
+            fetch('/best_guess')
                 .then(response => response.json())
                 .then(data => {
                     const wordsList = document.getElementById('wordsList');
-                    wordsList.innerHTML = '';  // Clear the list
+                    wordsList.innerHTML = '';  // Clear the table body
 
                     if (Array.isArray(data)) {
-                        data.forEach(entry => {
-                            const listItem = document.createElement('li');
-                            listItem.textContent = `Guess: ${entry.guess}, Score: ${entry.score}`;
-                            wordsList.appendChild(listItem);
-                        });
-                    } else {
-                        console.error('Expected an array of objects from the server');
+                        if (data[0].message) {
+                            // If there's only one item and it's a message, insert it as a single table row
+                            const row = document.createElement('tr');
+                            const messageCell = document.createElement('td');
+                            messageCell.textContent = data[0].message;
+                            messageCell.colSpan = 2;  // Span across both columns (Guess and Score)
+                            row.appendChild(messageCell);
+                            wordsList.appendChild(row);
+                        } else {
+                            // Handle cases where there are guesses and scores
+                            data.forEach(entry => {
+                                const row = document.createElement('tr');
+                                
+                                const guessCell = document.createElement('td');
+                                guessCell.textContent = entry.guess;
+                                row.appendChild(guessCell);
+
+                                const scoreCell = document.createElement('td');
+                                scoreCell.textContent = entry.score;
+                                row.appendChild(scoreCell);
+
+                                wordsList.appendChild(row);
+                            });
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching words:', error);
                 });
         }
+        function fetchGuess() {
+            fetch('/user_guesses')
+                .then(response => response.json())
+                .then(data => {
+                    const personalGuessesList = document.getElementById('personalGuesses');
+                    personalGuessesList.innerHTML = '';  // Clear the table body
+
+                    if (Array.isArray(data)) {
+                        if (data[0].message) {
+                            // If there's only one item and it's a message, insert it as a single table row
+                            const row = document.createElement('tr');
+                            const messageCell = document.createElement('td');
+                            messageCell.textContent = data[0].message;
+                            messageCell.colSpan = 2;  // Span across both columns (Guess and Score)
+                            row.appendChild(messageCell);
+                            personalGuessesList.appendChild(row);
+                        } else {
+                            // Handle cases where there are guesses and scores
+                            data.forEach(entry => {
+                                const row = document.createElement('tr');
+
+                                const guessCell = document.createElement('td');
+                                guessCell.textContent = entry.guess;
+                                row.appendChild(guessCell);
+
+                                const scoreCell = document.createElement('td');
+                                scoreCell.textContent = entry.score;
+                                row.appendChild(scoreCell);
+
+                                personalGuessesList.appendChild(row);
+                            });
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching guesses:', error);
+                });
+        }
+
+
     </script>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Word Guess Game</h1>
-        <!-- Display the room code -->
-        <div class="mb-3">
-            <h2>Room Code: {{ session['room'] }}</h2>
-            <p>Share this room code with others to join!</p>
-        </div>
-        <!-- Navigation Buttons -->
-        <div class="mb-3">
+        <div class="button-group">
             <a class="btn btn-secondary" href="/" role="button">Back to Home</a>
             <a class="btn btn-danger" href="/logout" role="button">Logout</a>
         </div>
-        <div id="gameStatus">Click "Start Game" to begin!</div>
-        <button class="btn btn-primary" onclick="startGame()">Start Game</button>
+        <h1>🎮 Word Guess Game</h1>
+        <div class="mb-3" style="display: flex; justify-content: center; flex-direction: column; align-items: center; text-align: center;">
+            <h2>Room Code: {{ session['room'] }}</h2>
+            <p>Share this room code with others to join!</p>
+        </div>
+        <button class="btn btn-primary btn-large centered-button" onclick="startGame()">Start Game</button>
+        <div id="gameStatus">Submit your guess</div>
         <div class="form-group">
-            <label for="guess">Your Guess:</label>
             <input type="text" id="guess" placeholder="Enter your guess here" disabled>
         </div>
-        <button class="btn btn-success" id="submitGuess" onclick="makeGuess()" disabled>Submit Guess</button>
-        <button class="btn btn-danger" id="endGame" onclick="endGame()" disabled>End Game</button>
+        <div class="button-group-game">
+            <button class="btn btn-success" id="submitGuess" onclick="makeGuess()" disabled>Submit Guess</button>
+            <button class="btn btn-danger" id="endGame" onclick="endGame()" disabled>End Game</button>
+        </div>
         <div id="result"></div>
-        <div id="words">
-            <h2>All Words</h2>
-            <ul id="wordsList"></ul>
+
+        <div class="table-container">
+            <div class="table-wrapper">
+                <h3>Personal Guesses</h3>
+                <table>
+                    <thead>
+                        <tr><th>Guess</th><th>Score</th></tr>
+                    </thead>
+                    <tbody id="personalGuesses"></tbody>
+                </table>
+            </div>
+
+            <div class="tables-row">
+                <div class="table-wrapper small">
+                    <h3>Best Room Guess</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Guess</th><th>Score</th></tr>
+                        </thead>
+                        <tbody id="wordsList"></tbody>
+                    </table>
+                </div>
+
+                <div class="table-wrapper small">
+                    <h3>Winner List</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Guess</th><th>Score</th></tr>
+                        </thead>
+                        <tbody id="winnerList"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </body>
-</html>
+
+{% endblock %}

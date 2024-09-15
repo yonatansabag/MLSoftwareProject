@@ -67,7 +67,8 @@
         <div class="navbar-nav">
           <a class="nav-item nav-link" id="home" href="/">Home</a>
           {% if user.is_authenticated %}
-            <a class="nav-item nav-link" id="uploadImage" href="/upload_image">Upload Image</a>
+            <a class="nav-item nav-link" id="syncUploadImage" href="/sync_upload_image">Upload Image - Sync</a>
+            <a class="nav-item nav-link" id="asyncUploadImage" href="/async_upload_image">Upload Image - Async</a>
             <a class="nav-item nav-link" id="game" href="/roomjoin">Play Game</a>
             <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
           {% else %}
