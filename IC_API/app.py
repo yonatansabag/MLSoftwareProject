@@ -71,9 +71,31 @@ def create_app():
         except Exception as e:
             return {'error': str(e)}
 
-    #
-    @app.route('/classify', methods=['POST'])
-    def classify_image():
+    @app.route('/classify_sync', methods=['POST'])
+    def classify_image_sync():
+        if 'image' not in request.files:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Api did not receive image'}}), 400)
+
+        file = request.files['image']
+        if file.filename == '':
+            return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
+
+        if file and file.filename.rsplit('.', 1)[1].lower() not in ['jpg', 'jpeg', 'png']:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Invalid file type'}}), 400)
+
+        try:
+            image_data = file.read()
+            description = describe_image(image_data)
+            if isinstance(description, dict) and 'error' in description:
+                return make_response(jsonify({'error': {'code': 500, 'message': description['error']}}), 500)
+
+            return make_response(jsonify({'matches': description}), 200)
+        except Exception as e:
+            error_message = f'Failed to process file: {str(e)}'
+            return make_response(jsonify({'error': {'code': 500, 'message': error_message}}), 500)
+
+    @app.route('/classify_async', methods=['POST'])
+    def classify_image_async():
         if 'image' not in request.files:
             return make_response(jsonify({'error': {'code': 400, 'message': 'Api did not receive image'}}), 400)
 

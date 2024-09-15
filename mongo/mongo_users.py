@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+import heapq
 from flask_login import UserMixin
 
 # Initialize MongoDB client and database (global)
@@ -99,30 +100,54 @@ class GuessesDatabase():
     Represents a word in the MongoDB database.
     """
 
-    def __init__(self, guess=None, score=None):
+    def __init__(self, name=None, guess=None, score=None):
+        self.name = name
         self.guess = guess
         self.score = score
 
     @classmethod
-    def add_word(cls, guess, score):
+    def add_word(cls, name, guess, score):
         word_doc = {
+            'name': name,
             'guess': guess,
             'score': score
         }
         guesses.insert_one(word_doc)
-        return cls(guess=guess, score=score)
+        return cls(name=name, guess=guess, score=score)
 
     def get_id(self):
         return self.guess
+    
+    @classmethod
+    def get_best(cls):
+        all_documents = list(guesses.find({}))
+    
+        if not all_documents:
+            return None  # No documents found
+
+        # Find the document with the highest score
+        best_document = max(all_documents, key=lambda doc: doc['score'])
+        print(best_document.get('name'))
+        result = [{'guess': best_document.get('name'), 'score': best_document.get('score')}]
+        return result
 
     @classmethod
-    def print_all(cls):
+    def print_all(cls, name):
         """
-        Prints all documents in the MongoDB collection.
+        Prints all documents in the MongoDB collection where the 'name' matches the provided name.
         """
-        # Fetch all documents from the collection
-        all_documents = list(guesses.find({}))
-        # Print each document
-        result = [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in all_documents]
-        # print(result)
+        # Fetch all documents where 'name' matches the provided name
+        all_documents = list(guesses.find({'name': name}))
+        best_five =  heapq.nlargest(5, all_documents, key=lambda doc: doc['score'])
+        # Prepare the result to return only 'guess' and 'score'
+        result = [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in best_five]
+        
         return result
+
+
+    @classmethod
+    def clear_database(cls):
+        """
+        Clears all documents from the MongoDB collection.
+        """
+        guesses.delete_many({})  # Delete all documents in the collection
