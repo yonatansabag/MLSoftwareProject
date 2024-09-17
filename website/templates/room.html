@@ -3,18 +3,28 @@
 {% block title %}Find Room{% endblock %}
 
 {% block content %}
-    <form method="post" action="/roomjoin" id="roomForm">
-        <h3>Enter or Create Game Room</h3>
-        <div class="form-group">
-            <label for="name">Name:</label>
+<div style="display: flex; justify-content: center; align-items: center;">
+    <form method="post" action="/roomjoin" id="roomForm" style="width: 100%; max-width: 600px;margin-top: 140px;">
+        <h3 style="
+            text-align: center;
+            margin-bottom: 80px;
+            color: #654995; /* Adjust color as needed */
+            font-family: 'Arial', sans-serif; /* You can change the font family */
+            font-size: 35px; /* Increase the size as needed */
+            font-weight: bold;
+            text-transform: uppercase;
+        ">Enter or Create Game Room</h3>
+
+        <div class="form-group" id="Name" style="display: none;">
+            <label for="name" style="color: #654995; font-family: 'Arial', sans-serif;font-weight: bold; ">Name:</label>
             <input type="text" id="name" class="form-control" placeholder="Your name goes here" name="name" value="{{ name }}" required/>
         </div>
         <div class="form-group" id="codeGroup" style="display: none;">
-            <label for="code">Room Code:</label>
+            <label for="code" style="color: #654995; font-family: 'Arial', sans-serif;font-weight: bold; ">Room Code:</label>
             <input type="text" id="code" class="form-control" placeholder="Room Code" name="code" value="{{ code }}"/>
         </div>
         <div class="form-group" id="numPlayersGroup" style="display: none;">
-            <label for="num_players">Number of Players:</label>
+            <label for="num_players" style="color: #654995; font-family: 'Arial', sans-serif;font-weight: bold; ">Number of Players:</label>
             <select id="num_players" name="num_players" class="form-control">
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -22,22 +32,25 @@
                 <option value="4">4</option>
             </select>
         </div>
-        <div class="form-group">
-            <button type="submit" id="joinRoomButton" name="join" class="btn btn-primary">Join a Room</button>
-            <button type="submit" id="createRoomButton" name="create" class="btn btn-success">Create a Room</button>
+        <div class="form-group" style="display: flex; justify-content: space-between;" >
+            <button type="submit" id="joinRoomButton" name="join" class="btn btn-primary" style="width: 100%;
+            ;margin-right: 10px;;">Join a Room</button>
+            <button type="submit" id="createRoomButton" name="create" class="btn btn-success" style="width: 100%;">Create a Room</button>
         </div>
         {% if error %}
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" style="text-align: center;">
             {{ error }}
         </div>
         {% endif %}
     </form>
+</div>
 
     <!-- Add Socket.IO script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('roomForm');
+            const NameGroup = document.getElementById('Name')
             const codeGroup = document.getElementById('codeGroup');
             const numPlayersGroup = document.getElementById('numPlayersGroup');
             const createRoomButton = document.getElementById('createRoomButton');
@@ -45,11 +58,13 @@
 
             // Show/Hide fields based on button click
             createRoomButton.addEventListener('click', function() {
+                NameGroup.style.display = 'block';
                 codeGroup.style.display = 'none'; // Hide room code field
                 numPlayersGroup.style.display = 'block'; // Show number of players dropdown
             });
 
             joinRoomButton.addEventListener('click', function() {
+                NameGroup.style.display = 'block';
                 codeGroup.style.display = 'block'; // Show room code field
                 numPlayersGroup.style.display = 'none'; // Hide number of players dropdown
             });

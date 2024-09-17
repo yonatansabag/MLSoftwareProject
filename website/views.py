@@ -9,7 +9,7 @@ import time
 import random
 from sentence_transformers import SentenceTransformer
 import numpy as np
-from mongo.mongo_users import WordDatabase, db_words, GuessesDatabase, guesses
+from mongo.mongo_users import WordDatabase, GuessesDatabase
 import cohere
 from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
@@ -182,7 +182,6 @@ def roomjoin():
     """
     session.clear()
     if request.method == "POST":
-        print("It's post method")
         name = request.form.get("name")
         code = request.form.get("code")
         join = 'join' in request.form
@@ -191,11 +190,11 @@ def roomjoin():
         # Validate that the user has entered a name
         # print(f"create is : {create} of type {type(create)}")
         if not name:
-            return render_template('room.html', error="Please enter a name", code=code, name=name)
+            return render_template('room.html', error="Please enter a name")
 
         # Check if the user wants to join an existing room
         if join and not code:
-            return render_template('room.html', error="Please enter a room code", code=code, name=name)
+            return render_template('room.html', error="Please enter a room code")
 
         room = code
 
@@ -203,15 +202,21 @@ def roomjoin():
         if create:
             num_players = request.form.get("num_players")
             room = generate_unique_code(4)
-            rooms[room] = {"members": 1, "game_started": False, "game_starter": name, "num_players_in_room" : num_players, 'winners': []}
+            rooms[room] = {"members": 1, "game_started": False, "game_starter": name, "num_players_in_room" : num_players,
+                           'players': [], 'winners': []}
             session["room"] = room
             session["name"] = name
+            # rooms[room]['players'].append(name)
             return redirect(url_for('views.waiting',room_code=code))
         
         if join:
             # Check if the room code exists when trying to join a room
             if code not in rooms:
-                return render_template('room.html', error="Room does not exist", code=code, name=name)
+                session.clear()
+                return render_template('room.html', error="Room does not exist")
+            if rooms[room]['members'] == int(rooms[room]['num_players_in_room']):
+                print()
+                return render_template('room.html', error="Room is full")
             rooms[code]["members"] += 1
             session["room"] = code
             session["name"] = name
@@ -364,7 +369,7 @@ def guess():
 
     hidden_word = rooms[room].get('hidden_word')
     user_guess = request.json.get('guess', '')
-    GuessesDatabase.get_best()
+    # GuessesDatabase.get_best()
     if not user_guess:
         return make_response(jsonify({'error': {'code': 400, 'message': 'No guess provided'}}), 400)
 
@@ -395,9 +400,10 @@ def guess():
         # round the score to be out of 10 and with only one number after the dot
         score = round(score * 10, 1)
         score = round(score * 2 - 10, 1)
+        room = session.get('room')
         name = session.get('name')
         if score < 10:
-            GuessesDatabase.add_word(name, user_guess, score)
+            GuessesDatabase.add_word(room, name, user_guess, score)
         else:
             rooms[room]['winners'].append(session.get('name'))
             
@@ -420,19 +426,20 @@ def guess():
 
 @views.route('/best_guess', methods=['GET'])
 def best_guess():
-    words = GuessesDatabase.get_best()
+    room = room = session.get('room')
+    words = GuessesDatabase.get_best(room)
     return jsonify(words)
         
 @views.route('/winner_list', methods=['GET'])
 def winners():
-    print('in winners')
     room = session.get('room')
     return jsonify(rooms[room]['winners'])
     
 @views.route('/user_guesses', methods=['GET'])
 def all_guesses():
+    room = session.get('room')
     name = session.get('name')
-    words = GuessesDatabase.print_all(name)
+    words = GuessesDatabase.print_all(room, name)
     return jsonify(words)
 
 @views.route('/end_game', methods=['GET'])
@@ -443,6 +450,7 @@ def end_game():
     Returns:
         JSON Response: Confirmation of game end and hidden word.
     """
+    name = session.get('name')
     room = session.get('room')
     rooms[room]['game_started']= True
     hidden_word_room = rooms[room]['hidden_word']
@@ -450,5 +458,5 @@ def end_game():
     if hidden_word:
         hidden_word = hidden_word.replace('\n', '').strip()
     session['game_over'] = True
-    GuessesDatabase.clear_database()
+    GuessesDatabase.clear_database(room, name)
     return jsonify({'message': 'Game ended.', 'hidden_word': hidden_word_room})
