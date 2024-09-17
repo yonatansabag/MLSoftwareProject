@@ -318,6 +318,8 @@
                 });
         }
 
+        let previousWinners = [];
+
         function fetchWinners() {
             fetch('/winner_list')  
                 .then(response => response.json())
@@ -335,6 +337,13 @@
 
                             winnerList.appendChild(row);
                         });
+                        if (data.length > previousWinners.length) {
+                        const newWinner = data[data.length - 1];  // Get the latest winner
+                        winnerMessage.textContent = `${newWinner} guessed the word correctly!`;  // Display an alert message
+                    }
+
+                    // Update the previous winners list
+                    previousWinners = data;
                     }
                 })
                 .catch(error => {
@@ -350,6 +359,7 @@
     <div class="container">
         <div class="button-group">
             <a class="btn btn-secondary" href="/" role="button">Back to Home</a>
+            <a class="btn btn-primary" href="/roomjoin" role="button">New game</a>
             <a class="btn btn-danger" href="/logout" role="button">Logout</a>
         </div>
         <h1>🎮 Word Guess Game</h1>
@@ -361,7 +371,21 @@
         <div class="form-group">
             <input type="text" id="guess" placeholder="Enter your guess here" disabled>
         </div>
-        <div class="button-group-game">
+        <div id="winnerMessage"
+         style=" text-align: center;
+        background-color: #e2f3f5; 
+        color: #223e2b;
+        border-radius: 30px; /* Rounded corners */
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width:50%;
+        font-size: 26px;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+        margin: 0 auto;">
+        </div>
+
+        <div class="button-group-game" style="margin-top: 20px;">
             <button class="btn btn-success" id="submitGuess" onclick="makeGuess()" disabled>Submit Guess</button>
             <button class="btn btn-danger" id="endGame" onclick="endGame()" disabled>End Game</button>
         </div>
