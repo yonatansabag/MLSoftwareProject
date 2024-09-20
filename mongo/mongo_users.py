@@ -68,7 +68,7 @@ class User(UserMixin):
         return self.username
 
 
-class WordDatabase():
+class WordDatabase:
     """
     Represents a word in the MongoDB database.
     """

@@ -15,11 +15,7 @@ from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
 from .app import socketio
-#import socketio from main.py
 
-
-
-# from website.app import create_socketio
 
 
 # Create a Flask Blueprint named 'views'
@@ -51,25 +47,25 @@ def home():
     return render_template("home.html", user=current_user)
 
 
-def describe_image(image_path):
-    """
-    Generates a textual description of   an image using generative AI.
-
-    Args:
-        image_path (str): Path to the image file.
-
-    Returns:
-        str: Generated description of the image.
-    """
-    # TODO: Check if path is fined or need to send image
-    text_prompt = "Describe the image"
-    image = Image.open(image_path)
-    prompt = [text_prompt, image]
-    response = model.generate_content(prompt)
-    if not response.text:
-        # self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
-        return {'error': 'Failed to generate description'}
-    return response.text
+# def describe_image(image_path):
+#     """
+#     Generates a textual description of   an image using generative AI.
+#
+#     Args:
+#         image_path (str): Path to the image file.
+#
+#     Returns:
+#         str: Generated description of the image.
+#     """
+#     # TODO: Check if path is fined or need to send image
+#     text_prompt = "Describe the image"
+#     image = Image.open(image_path)
+#     prompt = [text_prompt, image]
+#     response = model.generate_content(prompt)
+#     if not response.text:
+#         # self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
+#         return {'error': 'Failed to generate description'}
+#     return response.text
 
 @views.route('/classify_image', methods=['POST', 'GET'])
 @login_required 

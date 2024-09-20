@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Guess Game</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #gameStatus {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e0f7fa;
+            border: 1px solid #b2ebf2;
+            border-radius: 5px;
+        }
+
+        #wordsList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #wordsList li {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+    <script>
+        function startGame() {
+            fetch('/start_game', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('gameStatus').innerText = data.message;
+                    document.getElementById('guess').disabled = false;
+                    document.getElementById('submitGuess').disabled = false;
+                    document.getElementById('endGame').disabled = false;
+                });
+        }
+
+        function makeGuess() {
+            const guess = document.getElementById('guess').value;
+            fetch('/guess', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guess: guess })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = `Score: ${data.score}. ${data.message}`;
+                if (data.message.includes("Congratulations")) {
+                    document.getElementById('guess').disabled = true;
+                    document.getElementById('submitGuess').disabled = true;
+                }
+                fetchWords();  // Call fetchWords to update the list
+            });
+        }
+
+        function endGame() {
+            fetch('/end_game')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('gameStatus').innerText = `Game ended. The hidden word was '${data.hidden_word}'.`;
+                    document.getElementById('guess').disabled = true;
+                    document.getElementById('submitGuess').disabled = true;
+                });
+        }
+        function fetchWords() {
+    fetch('/all_words')
+        .then(response => response.json())
+        .then(data => {
+            const wordsList = document.getElementById('wordsList');
+            wordsList.innerHTML = '';  // Clear the list
+
+            // Check if data is an array
+            if (Array.isArray(data)) {
+                data.forEach(entry => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Guess: ${entry.guess}, Score: ${entry.score}`;
+                    wordsList.appendChild(listItem);
+                });
+            } else {
+                console.error('Expected an array of objects from the server');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching words:', error);
+        });
+}
+
+
+
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Word Guess Game</h1>
+        <!-- Navigation Buttons -->
+        <div class="mb-3">
+            <a class="btn btn-secondary" href="/" role="button">Back to Home</a>
+            <a class="btn btn-danger" href="/logout" role="button">Logout</a>
+        </div>
+        <div id="gameStatus">Click "Start Game" to begin!</div>
+        <button class="btn btn-primary" onclick="startGame()">Start Game</button>
+        <div class="form-group">
+            <label for="guess">Your Guess:</label>
+            <input type="text" id="guess" placeholder="Enter your guess here" disabled>
+        </div>
+        <button class="btn btn-success" id="submitGuess" onclick="makeGuess()" disabled>Submit Guess</button>
+        <button class="btn btn-danger" id="endGame" onclick="endGame()" disabled>End Game</button>
+        <div id="result"></div>
+        <div id="words">
+            <h2>All Words</h2>
+            <ul id="wordsList"></ul>
+        </div>
+    </div>
+</body>
+</html>
