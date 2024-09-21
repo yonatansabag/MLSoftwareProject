@@ -8,7 +8,6 @@ import os
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'mongo')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', "mongo")))
 # Import MongoDB configuration
-from mongo.mongo_config import db
 from mongo.mongo_users import User, game
 from flask_socketio import SocketIO
 

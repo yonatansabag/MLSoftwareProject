@@ -5,21 +5,22 @@ from flask import Flask, request, jsonify, make_response
 from pymongo import MongoClient
 import random
 from PIL import Image
-import google.generativeai as genai
+import google.generativeai
 import traceback
 import io
 import ast
+import os
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 # Set your Google API key for generative AI
-GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 # Configure generative AI with the API key
-genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+google.generativeai.configure(api_key=GOOGLE_API_KEY)
+model = google.generativeai.GenerativeModel('gemini-1.5-flash')
 
 # MongoDB setup
-MONGO_URI = 'mongodb://localhost:27017/'  # Use the service name 'mongo' as defined in Docker Compose
+MONGO_URI = 'mongodb://mongo:27017/'  # Use the service name 'mongo'
 # MONGO_URI ='mongodb://mongo:27017/'
 client = MongoClient(MONGO_URI)
 db = client['image_classification_db']
@@ -68,7 +69,8 @@ def create_app():
             result = [{"name": response.text, "score": '0.885'}]
             return result
         except Exception as e:
-            return {'error': "Big balagan"}
+            print(f"Error processing image: {str(e)}")
+            return {'error': "Failed to describe image"}
 
     @app.route('/upload_sync', methods=['POST'])
     def upload_image_sync():
@@ -119,16 +121,6 @@ def create_app():
 
     @app.route('/result/<req_id>', methods=['GET'])
     def get_result(req_id):
-        # if not (req_id.isdigit() and 10000 <= int(req_id) <= 1000000):
-        #     error_response = {
-        #         'status': 'error',
-        #         'error': {
-        #             'code': 400,
-        #             'message': 'Invalid request ID'
-        #         }
-        #     }
-        #     return make_response(jsonify(error_response), 400)
-
         result = retrieve_result(req_id)
         if result:
             status = result.get('status')
