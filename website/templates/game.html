@@ -340,6 +340,12 @@
                         if (data.length > previousWinners.length) {
                         const newWinner = data[data.length - 1];  // Get the latest winner
                         winnerMessage.textContent = `${newWinner} guessed the word correctly!`;  // Display an alert message
+                        winnerMessage.style.display = 'block';  // Show the message
+
+                        // Set a timeout to hide the message after 5 seconds (5000 milliseconds)
+                        setTimeout(() => {
+                            winnerMessage.style.display = 'none';  // Hide the message
+                        }, 3000);
                     }
 
                     // Update the previous winners list

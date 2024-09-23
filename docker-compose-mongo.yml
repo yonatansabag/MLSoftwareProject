@@ -14,6 +14,26 @@ services:
     ports:
       - 8081:8081  # Maps port 8081 on the host to port 8081 on the container
 
+  flask-app:
+    build:
+      context: .
+      dockerfile: ic_docker  # Build the image from the Dockerfile in the current directory
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}  # Pass your Google API key as an environment variable
+    ports:
+      - 5000:5000  # Maps port 5000 on the host to port 5000 on the container
+    depends_on:
+      - mongo  # Ensure mongo service starts before the flask app
+
+  main-app:
+    build:
+      context: .  # Assuming your main app is in a 'main' directory
+      dockerfile: DockerFile
+    ports:
+      - 8000:8000  # Maps port 8000 on the host to port 8000 on the container
+    depends_on:
+      - mongo  # Ensure mongo service starts before the main app
+      - flask-app  # Ensure flask app is started before the main app
 
 volumes:
   mongodb:  # Defines a named volume to persist MongoDB data
