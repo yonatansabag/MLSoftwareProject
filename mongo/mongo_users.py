@@ -4,6 +4,7 @@ from flask_login import UserMixin
 
 # Initialize MongoDB client and database (global)
 client = MongoClient('mongodb://mongo:27017/')
+# client = MongoClient('mongodb://localhost:27017/')
 db_users = client['Users']
 db_words = client['Words']
 db_guesses = client['Guess']
@@ -139,11 +140,11 @@ class GuessesDatabase():
         """
         # Fetch all documents where 'name' matches the provided name
         all_documents =  list(guesses.find({'room': room, 'name':name}))
+        latest_guess = all_documents[-1]
         # all_documents = list(room_doc.find({'name': name}))
         best_five =  heapq.nlargest(5, all_documents, key=lambda doc: doc['score'])
         # Prepare the result to return only 'guess' and 'score'
-        result = [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in best_five]
-        
+        result = [{'guess': latest_guess.get('guess'), 'score': latest_guess.get('score')}]  + [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in best_five]
         return result
 
 
