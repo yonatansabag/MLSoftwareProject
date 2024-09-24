@@ -95,7 +95,8 @@ def classify_image():
             if is_async:
                 try:
                     response = requests.post(
-                        'http://flask-app:5000/upload_async',
+                        #  'http://127.0.0.1:5000/upload_async',    # if local
+                    'http://flask-app:5000/upload_async',  # if from machine
                         files={'image': open(file_path, 'rb')}
                     )
                     if response.status_code == 202:
@@ -116,7 +117,8 @@ def classify_image():
                     return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
             else:
                 response = requests.post(
-                    'http://flask-app:5000/upload_sync',
+                    # 'http://127.0.0.1:5000/upload_sync',    # if local
+                    'http://flask-app:5000/upload_sync',  # if from machine
                     files={'image': open(file_path, 'rb')}
                 )
                 if response.status_code == 200:
@@ -132,7 +134,8 @@ def classify_image():
 @views.route('/result/<request_id>', methods=['GET'])
 @login_required
 def get_result(request_id):
-    response = requests.get(f'http://flask-app:5000/result/{request_id}')
+    response = requests.get(f'http://flask-app:5000/result/{request_id}') # if from machine
+    # response = requests.get(f'http://127.0.0.1:5000/result/{request_id}') # if local
 
     if response.status_code == 200:
         result = response.json()
