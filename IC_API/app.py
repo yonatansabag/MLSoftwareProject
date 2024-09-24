@@ -20,8 +20,8 @@ google.generativeai.configure(api_key=GOOGLE_API_KEY)
 model = google.generativeai.GenerativeModel('gemini-1.5-flash')
 
 # MongoDB setup
-MONGO_URI = 'mongodb://mongo:27017/'  # Use the service name 'mongo'
-# MONGO_URI ='mongodb://mongo:27017/'
+# MONGO_URI = 'mongodb://mongo:27017/'  # Use the service name 'mongo'
+MONGO_URI ='mongodb://localhost:27017/'
 client = MongoClient(MONGO_URI)
 db = client['image_classification_db']
 results_collection = db['results']
