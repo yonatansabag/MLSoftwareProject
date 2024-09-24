@@ -83,7 +83,12 @@ def create_app():
 
         if file and file.filename.rsplit('.', 1)[1].lower() not in ['jpg', 'jpeg', 'png']:
             return make_response(jsonify({'error': {'code': 400, 'message': 'Invalid file type'}}), 400)
+        
+        file_contents = file.read()
+        if len(file_contents) == 0:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Empty file'}}), 400)
 
+        file.seek(0)
         try:
             image_data = file.read()
             description = describe_image(image_data)
@@ -107,6 +112,12 @@ def create_app():
         if file and file.filename.rsplit('.', 1)[1].lower() not in ['jpg', 'jpeg', 'png']:
             return make_response(jsonify({'error': {'code': 400, 'message': 'Invalid file type'}}), 400)
 
+        file_contents = file.read()
+        if len(file_contents) == 0:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Empty file'}}), 400)
+
+        file.seek(0)
+        
         try:
             image_data = file.read()
             request_id = str(random.randint(10000, 1000000))
@@ -179,5 +190,3 @@ def retrieve_result(req_id):
 if __name__ == '__main__':
     app = create_app()
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-

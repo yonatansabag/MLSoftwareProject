@@ -5,7 +5,8 @@
 {% block content %}
     <div style="text-align: center; margin-top: 50px;">
         <h1 style="color: #ff5733;">📝 Sign Up</h1>
-        <form method="POST" style="margin: 30px auto; width: 60%; border: 2px solid #ff5733; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+        <div id="errorMessage" style="display:none; color:red; margin-bottom: 20px;"></div>
+        <form id="signupForm" method="POST" action="{{ url_for('auth.sign_up') }}"  style="margin: 30px auto; width: 60%; border: 2px solid #ff5733; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
             <div class="form-group">
                 <label for="email" style="font-size: 1.2em; color: #2c3e50;">Username</label>
                 <input
@@ -43,4 +44,29 @@
             <button type="submit" class="btn btn-primary" style="padding: 10px 20px; color: #fff; background-color: #ff5733; border: none; border-radius: 5px;">Submit</button>
         </form>
     </div>
+    <script>
+      document.getElementById('signupForm').addEventListener('submit', function(event) {
+          event.preventDefault();  // Prevent the default form submission
+
+          const formData = new FormData(this);
+
+          fetch(this.action, {
+              method: this.method,
+              body: formData,
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.error) {
+                  // Display the error message without redirecting
+                  const errorMessageDiv = document.getElementById('errorMessage');
+                  errorMessageDiv.innerText = data.error.message;
+                  errorMessageDiv.style.display = 'block';
+              } else {
+                  // Redirect to the home page or handle success
+                  window.location.href = data.redirect;
+              }
+          })
+          .catch(error => console.error('Error:', error));
+      });
+  </script>
 {% endblock %}

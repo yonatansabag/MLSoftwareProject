@@ -15,42 +15,6 @@
       crossorigin="anonymous"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-    <script>
-      function isValidJSON(text) {
-            try {
-                const data = text.json()
-                return data
-            } catch (error) {
-                return false;
-            }
-        }
-      document.addEventListener('DOMContentLoaded', function() {
-          const form = document.getElementById('login-form');
-          form.addEventListener('submit', function(event) {
-              event.preventDefault();  // Prevent the default form submission
-              const formData = new FormData(form);
-
-              fetch('/login', {
-                  method: 'POST',
-                  body: formData
-              })
-              .then(response => {
-                data = isValidJSON(response)
-                if (data) {
-                  data.then(res => {
-                      console.log(res)
-                      if (res.is_authenticated) {
-                        form.submit()
-                      }
-                  }).catch(error => form.submit())
-                } else {
-                  form.submit();
-                }
-              })
-              .catch(error => console.error('Error:', error));
-          });
-      });
-    </script>
     <title>{% block title %}Home{% endblock %}</title>
 </head>
 <body>

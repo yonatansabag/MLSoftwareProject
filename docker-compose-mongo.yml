@@ -27,10 +27,12 @@ services:
 
   main-app:
     build:
-      context: .  # Assuming your main app is in a 'main' directory
+      context: .  
       dockerfile: DockerFile
     ports:
-      - 8000:8000  # Maps port 8000 on the host to port 8000 on the container
+      - 80:8000  
+    # ports:
+    # - 8000:8000 #if local
     depends_on:
       - mongo  # Ensure mongo service starts before the main app
       - flask-app  # Ensure flask app is started before the main app
