@@ -12,6 +12,9 @@ game = db_words["Words"]
 guesses = db_guesses['Guess']
 
 
+
+
+
 class User(UserMixin):
     """
     Represents a user in the MongoDB database.
@@ -68,6 +71,16 @@ class User(UserMixin):
         return self.username
 
 
+def delete_user(username):
+    """
+    Delete a user from the MongoDB database.
+
+    Args:
+        username (str): The username of the user to delete.
+    """
+    collection.delete_one({"username": username})
+
+
 class WordDatabase:
     """
     Represents a word in the MongoDB database.
@@ -100,14 +113,14 @@ class GuessesDatabase():
     Represents a word in the MongoDB database.
     """
 
-    def __init__(self,room=None, name=None, guess=None, score=None):
+    def __init__(self, room=None, name=None, guess=None, score=None):
         self.room = room
         self.name = name
         self.guess = guess
         self.score = score
 
     @classmethod
-    def add_word(cls,room, name, guess, score):
+    def add_word(cls, room, name, guess, score):
         word_doc = {
             'room': room,
             'name': name,
@@ -119,11 +132,11 @@ class GuessesDatabase():
 
     def get_id(self):
         return self.guess
-    
+
     @classmethod
     def get_best(cls, room):
-        all_documents =  list(guesses.find({'room': room}))
-    
+        all_documents = list(guesses.find({'room': room}))
+
         if not all_documents:
             return None  # No documents found
 
@@ -133,23 +146,22 @@ class GuessesDatabase():
         return result
 
     @classmethod
-    def print_all(cls, room, name,):
+    def print_all(cls, room, name, ):
         """
         Prints all documents in the MongoDB collection where the 'name' matches the provided name.
         """
         # Fetch all documents where 'name' matches the provided name
-        all_documents =  list(guesses.find({'room': room, 'name':name}))
+        all_documents = list(guesses.find({'room': room, 'name': name}))
         # all_documents = list(room_doc.find({'name': name}))
-        best_five =  heapq.nlargest(5, all_documents, key=lambda doc: doc['score'])
+        best_five = heapq.nlargest(5, all_documents, key=lambda doc: doc['score'])
         # Prepare the result to return only 'guess' and 'score'
         result = [{'guess': doc.get('guess'), 'score': doc.get('score')} for doc in best_five]
-        
+
         return result
 
-
     @classmethod
-    def clear_database(cls,room, name):
+    def clear_database(cls, room, name):
         """
         Clears all documents from the MongoDB collection.
         """
-        guesses.delete_many({'room':room, 'name': name})   # Delete all documents in the collection
+        guesses.delete_many({'room': room, 'name': name})  # Delete all documents in the collection

@@ -4,85 +4,82 @@ import time
 import unittest
 import requests
 import numpy as np
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, wait
 
-FAST_REPLY_TIME_RATIO = 1.1
+MAX_RESPONSE_TIME_FACTOR = 1.1
 
 
-class StressTestImageUploadAPITest(unittest.TestCase):
+class ImageUploadAPIStressTest(unittest.TestCase):
     """
-    Test suite for the Image Upload API.
-    This suite tests various endpoints of an image upload service including login, upload, and user management.
+    Stress test suite for the Image Upload API.
+    Tests login, upload, and classification endpoints under various conditions.
     """
+
     def setUp(self):
-        """
-        Set up test variables and URLs.
-        This method runs before each test case.
-        """
-        self.base_url = f'http://127.0.0.1:8000/'
-        self.valid_image_file = "uploads/mamix.jpeg"
-        self.login_data = {"username": "admin", "password": "admin"}
-        self.T = []
+        """Initialize test parameters and perform login."""
+        self.api_url = 'http://127.0.0.1:8000/'
+        self.test_image = "uploads/mamix.jpeg"
+        self.credentials = {"username": "admin", "password": "admin"}
+        self.timings = []
 
-        login_response = requests.post(self.base_url + "login", data=self.login_data, allow_redirects=False)
-        self.assertEqual(302, login_response.status_code)
-        self.login_response = login_response
+        login_resp = self.send_login_request()
+        self.assertEqual(302, login_resp.status_code)
+        self.session_cookies = login_resp.cookies
 
+    def send_login_request(self):
+        """Send a login request and return the response."""
+        return requests.post(f"{self.api_url}login", data=self.credentials, allow_redirects=False)
 
-    def _resp_is_json(self, response):
-        """
-        Helper method to check if response is JSON.
-        :param response: Response object to check.
-        """
-        self.assertEqual("application/json", response.headers.get("Content-Type", ""))
+    def verify_json_response(self, resp):
+        """Check if the response is in JSON format."""
+        self.assertEqual("application/json", resp.headers.get("Content-Type"))
 
+    def upload_and_classify(self):
+        """Upload an image and request classification."""
+        with open(self.test_image, 'rb') as img:
+            return requests.post(
+                f"{self.api_url}classify_image",
+                files={"image": img},
+                data={'mode': 'sync'},
+                cookies=self.session_cookies
+            )
 
-    def classify_image(self):
-        with open(self.valid_image_file, 'rb') as file:
-            response = requests.post(
-                                    self.base_url + "classify_image",
-                                    files={"image": file},
-                                    data={'method': 'sync'},
-                                    cookies=self.login_response.cookies)
-            return response
-
-
-    def _test_average_time_to_classify(self):
-        """
-        Test Average time to upload and classify an image with valid login credentials.
-        """
-        with open(self.valid_image_file, 'rb') as file:
+    def measure_classification_time(self):
+        """Measure and store the time taken for image classification."""
+        with open(self.test_image, 'rb') as img:
             for _ in range(6):
-                start_time = time.time()
-                response = self.classify_image()
-                self.T.append(time.time() - start_time)
+                start = time.time()
+                resp = self.upload_and_classify()
+                self.timings.append(time.time() - start)
 
-                self._resp_is_json(response)
-                self.assertIn("matches", response.json())
-                self.assertEqual(200, response.status_code)
-                file.seek(0)
+                self.verify_json_response(resp)
+                self.assertIn("matches", resp.json())
+                self.assertEqual(200, resp.status_code)
+                img.seek(0)
 
-        self.T = np.array(self.T).mean()
+        self.avg_time = np.mean(self.timings)
 
+    def test_concurrent_uploads(self):
+        """Test the API's performance under concurrent upload stress."""
+        self.measure_classification_time()
 
-    def test_stress_sync(self):
-        """
-        Test the system under stress by sending 6 parallel synchronous classification requests.
-        """
-        self._test_average_time_to_classify()
+        new_session = self.send_login_request()
+        self.assertEqual(302, new_session.status_code)
 
-        login_response = requests.post(self.base_url + "login", data=self.login_data, allow_redirects=False)
-        self.assertEqual(302, login_response.status_code)
+        start = time.time()
+        with ThreadPoolExecutor() as executor:
+            tasks = [executor.submit(self.upload_and_classify) for _ in range(6)]
+            wait(tasks)
+        total_duration = time.time() - start
 
-        start_time = time.time()
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.classify_image) for _ in range(6)]
-            concurrent.futures.wait(futures)
-        total_time = time.time() - start_time
+        print(f"Average single upload time: {self.avg_time:.2f} seconds")
+        print(f"Concurrent uploads total time: {total_duration:.2f} seconds")
 
-        print(f"Average time for single image classification: {self.T} seconds")
-        print(f"Total time for 6 concurrent requests: {total_time} seconds")
-        self.assertLess(total_time, FAST_REPLY_TIME_RATIO * self.T, "Response time exceeds the expected ratio.")
+        self.assertLess(
+            total_duration,
+            MAX_RESPONSE_TIME_FACTOR * self.avg_time,
+            "Concurrent upload time exceeds acceptable limit."
+        )
 
 
 if __name__ == "__main__":
