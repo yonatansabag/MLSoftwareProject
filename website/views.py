@@ -15,6 +15,7 @@ from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
 from .app import socketio
+from dotenv import load_dotenv
 #import socketio from main.py
 
 
@@ -23,14 +24,15 @@ from .app import socketio
 
 
 # Create a Flask Blueprint named 'views'
-views = Blueprint('views', __name__)
-
+views = Blueprint('views', __name__)    
+load_dotenv()
 # Set your Google API key for generative AI
-GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+COHERE_KEY = os.getenv('COHERE_KEY')
 # Configure generative AI with the API key
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
-co = cohere.Client("asNorrF7zKKhnbbpYVB0VZIs1UHu4MnTV1O3gXXe")
+co = cohere.Client(COHERE_KEY)
 # embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
 
 rooms = {}  # TODO: move to DB ??
@@ -95,8 +97,8 @@ def classify_image():
             if is_async:
                 try:
                     response = requests.post(
-                        #  'http://127.0.0.1:5000/upload_async',    # if local
-                    'http://flask-app:5000/upload_async',  # if from machine
+                         'http://127.0.0.1:5000/upload_async',    # if local
+                    # 'http://flask-app:5000/upload_async',  # if from machine
                         files={'image': open(file_path, 'rb')}
                     )
                     if response.status_code == 202:
@@ -117,8 +119,8 @@ def classify_image():
                     return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
             else:
                 response = requests.post(
-                    # 'http://127.0.0.1:5000/upload_sync',    # if local
-                    'http://flask-app:5000/upload_sync',  # if from machine
+                    'http://127.0.0.1:5000/upload_sync',    # if local
+                    # 'http://flask-app:5000/upload_sync',  # if from machine
                     files={'image': open(file_path, 'rb')}
                 )
                 if response.status_code == 200:
