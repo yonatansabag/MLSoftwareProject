@@ -1,20 +1,15 @@
-import time
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_login import LoginManager, current_user
-from pymongo import MongoClient
-from os import path
 import sys
 import os
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'mongo')))
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', "mongo")))
-# Import MongoDB configuration
+
 from mongo.mongo_users import User, game
 from flask_socketio import SocketIO
 
-# app = Flask(__name__)
 socketio = SocketIO()
 
-from werkzeug.security import generate_password_hash
 
 def initialize_default_admin():
     """
@@ -25,7 +20,7 @@ def initialize_default_admin():
     """
     admin_username = 'admin'
     admin_password = 'admin'
-    
+
     # Check if admin user already exists
     if User.get(admin_username) is None:
         # Create the admin user
@@ -33,6 +28,7 @@ def initialize_default_admin():
         print(f"Default admin user '{admin_username}' created.")
     else:
         print(f"Admin user '{admin_username}' already exists.")
+
 
 def create_app():
     """
@@ -43,11 +39,8 @@ def create_app():
     """
     app = Flask(__name__)
     socketio.init_app(app)
-    app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'  # Secret key for session management
-    app.config['SUCCESS'] = 0  # Counter for successful operations
-    app.config['FAILURE'] = 0  # Counter for failed operations
-    app.config['START_TIME'] = time.time()  # Application start time
-    
+    app.config['SECRET_KEY'] = "HELLO"
+
     # Initialize Flask-Login for managing user sessions
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
@@ -82,7 +75,7 @@ def create_app():
             dict: Dictionary with the 'user' key set to the current user object.
         """
         return dict(user=current_user)
-    
+
     @login_manager.unauthorized_handler
     def unauthorized_callback():
         """
@@ -91,8 +84,10 @@ def create_app():
         Returns:
             Any: JSON response with an unauthorized error message and HTTP status code 401.
         """
-        return make_response(jsonify({'error': {'code': 401, 'message': 'You are unauthorized to access that page, please log in.'}}), 401)
-    
+        return make_response(
+            jsonify({'error': {'code': 401, 'message': 'You are unauthorized to access that page, please log in.'}}),
+            401)
+
     @app.route('/')
     def index():
         """
@@ -102,9 +97,11 @@ def create_app():
             str: Contents of index.html file.
         """
         return send_from_directory('.', 'index.html')
+
     initialize_default_admin()
     game.drop()
     return app
+
 
 def create_socketio(app):
     from flask_socketio import SocketIO
@@ -120,4 +117,3 @@ def run_server():
     setup_socketio_handlers(socketio)
 
     return app, socketio
-

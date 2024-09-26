@@ -31,11 +31,9 @@ def is_valid_username(username):
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated and 'just_signed_up' not in session:
-        current_app.config['SUCCESS'] += 1
         return redirect(url_for('views.home'))
 
     if request.method == 'GET':
-        current_app.config['SUCCESS'] += 1
         return render_template("login.html", user=current_user)
 
     if request.method == 'POST':
@@ -46,58 +44,54 @@ def login():
         if username == 'admin' and password == 'admin':
             # print(user.password)
             login_user(user, remember=True)
-            # current_app.config['SUCCESS'] += 1
-            return redirect(url_for('views.home'))
+            return jsonify({'success': True, 'redirect': url_for('views.home')})
 
-        print(username, password)
         user = mongo_users.User.get(username)
         if user and check_password_hash(user.password, password):
             login_user(user, remember=True)
-            current_app.config['SUCCESS'] += 1
             session.pop('just_signed_up', None)
             return jsonify({'success': True, 'redirect': url_for('views.home')})
 
-        current_app.config['FAILURE'] += 1
         # flash('Incorrect username or password', category='error')
         return make_response(jsonify({'error': {'code': 401, 'message': 'Incorrect username or password.'}}), 401)
 
 
 @auth.route('/logout', methods=['GET'])
 def logout():
+    """
+    Logout route.
+
+    """
     if not current_user.is_authenticated:
         return make_response(jsonify({'error': {'message': 'You are unauthorized access this page, please log in.'}}),
                              401)
-
     logout_user()
-    current_app.config['SUCCESS'] += 1
     flash('Logged out successfully.', category='success')
     return redirect(url_for('views.home'))
 
 
 @auth.route('/sign-up', methods=['GET', 'POST'])
 def sign_up():
-    print(request.form)
+    """
+    Sign up route.
+
+    """
+
     if request.method == 'POST':
-        print(request.form)
         username = request.form.get('email')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
         if not username or not password1 or not password2:
             # flash('All fields are required.', category='error')
-            current_app.config['FAILURE'] += 1
             return make_response(jsonify({'error': {'message': 'All fields are required.'}}), 401)
         elif not is_valid_username(username):
-            current_app.config['FAILURE'] += 1
             return make_response(jsonify({'error': {'message': 'Username must be 3-20 characters long and contain only letters, numbers, and underscores.'}}), 401)
         elif mongo_users.User.get(username):
-            current_app.config['FAILURE'] += 1
             return make_response(jsonify({'error': {'message': 'Username already exists.'}}), 401)
         elif password1 != password2:
-            current_app.config['FAILURE'] += 1
             return make_response(jsonify({'error': {'message': 'Passwords don\'t match.'}}), 401)
         elif not is_strong_password(password1):
-            current_app.config['FAILURE'] += 1
             return make_response(jsonify({'error': {'message': 'Password must be at least 8 characters long and contain uppercase, lowercase, digit, and special character.'}}), 401)
         else:
             hashed_password = generate_password_hash(password1)
@@ -105,7 +99,6 @@ def sign_up():
             new_user = mongo_users.User.get(username)
             login_user(new_user, remember=True)
             flash('Account created successfully!', category='success')
-            current_app.config['SUCCESS'] += 1
             session['just_signed_up'] = True
             return jsonify({'success': True, 'redirect': url_for('views.home')})
 

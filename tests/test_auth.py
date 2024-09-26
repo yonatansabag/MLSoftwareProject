@@ -35,7 +35,7 @@ class AuthTest(unittest.TestCase):
     def test_login_correct_info(self):
         """Test logging in with correct username and password."""
         response = self._login()
-        self.assertEqual(302, response.status_code)  # Redirect on successful login
+        self.assertEqual(200, response.status_code)  # Redirect on successful login
 
     def test_login_incorrect_password(self):
         """Test logging in with correct username but incorrect password."""
@@ -64,8 +64,7 @@ class AuthTest(unittest.TestCase):
     def test_logout(self):
         """Test logging out after a successful login."""
         login_response = self._login()
-        self.assertEqual(302, login_response.status_code)
-
+        self.assertEqual(200, login_response.status_code)
         logout_response = requests.get(self.base_url + "logout", cookies=login_response.cookies, allow_redirects=False)
         self.assertEqual(302, logout_response.status_code)  # Redirect on logout
 

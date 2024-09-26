@@ -21,16 +21,16 @@ services:
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}  # Pass your Google API key as an environment variable
     ports:
-      - 5000:5000  # Maps port 5000 on the host to port 5000 on the container
+      - 6000:6000  # Maps port 6000 on the host to port 6000 on the container
     depends_on:
       - mongo  # Ensure mongo service starts before the flask app
 
   main-app:
     build:
-      context: .  
+      context: .
       dockerfile: DockerFile
     ports:
-      - 80:8000  
+      - 80:8000
     # ports:
     # - 8000:8000 #if local
     depends_on:
@@ -40,7 +40,3 @@ services:
 volumes:
   mongodb:  # Defines a named volume to persist MongoDB data
 
-# to Sabag
-# Open docker desktop on your computer
-# activate by writing docker-compose -f docker-compose-mongo.yml up in the vsterminal
-# you can see the db in this url: http://localhost:8081
