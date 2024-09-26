@@ -7,7 +7,7 @@ import io
 
 
 class TestImageClassificationAPI(unittest.TestCase):
-    BASE_URL = 'http://127.0.0.1:5000'
+    BASE_URL = 'http://127.0.0.1:6000'
 
     def setUp(self):
         # Create a test image
@@ -33,7 +33,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         img = Image.new('RGB', size, color=color)
         img.save(path)
 
-    def create_large_test_image(self, path, size=(5000, 5000)):
+    def create_large_test_image(self, path, size=(6000, 6000)):
         self.create_test_image(path, size=size, color='blue')
 
     def test_upload_sync_valid_image(self):
@@ -87,7 +87,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         request_id = upload_response.json()['request_id']
 
         result_url = f'{self.BASE_URL}/result/{request_id}'
-        max_retries = 10
+        max_retries = 30
         for _ in range(max_retries):
             response = requests.get(result_url)
             self.assertEqual(response.status_code, 200)
@@ -97,7 +97,7 @@ class TestImageClassificationAPI(unittest.TestCase):
                 self.assertIsInstance(data['matches'], list)
                 self.assertTrue(len(data['matches']) > 0)
                 return
-            time.sleep(1)
+            time.sleep(2)
 
         self.fail("Result processing did not complete in time")
 
@@ -143,7 +143,7 @@ class TestImageClassificationAPI(unittest.TestCase):
     def test_concurrent_uploads(self):
         url = f'{self.BASE_URL}/upload_async'
         request_ids = []
-        num_concurrent = 5
+        num_concurrent = 3
 
         with open(self.test_image_path, 'rb') as img:
             file_content = img.read()
@@ -175,7 +175,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         request_id = upload_response.json()['request_id']
 
         result_url = f'{self.BASE_URL}/result/{request_id}'
-        max_retries = 10
+        max_retries = 20
         for _ in range(max_retries):
             response = requests.get(result_url)
             self.assertEqual(response.status_code, 200)

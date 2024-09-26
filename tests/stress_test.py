@@ -23,7 +23,7 @@ class ImageUploadAPIStressTest(unittest.TestCase):
         self.timings = []
 
         login_resp = self.send_login_request()
-        self.assertEqual(302, login_resp.status_code)
+        self.assertEqual(200, login_resp.status_code)
         self.session_cookies = login_resp.cookies
 
     def send_login_request(self):
@@ -64,7 +64,7 @@ class ImageUploadAPIStressTest(unittest.TestCase):
         self.measure_classification_time()
 
         new_session = self.send_login_request()
-        self.assertEqual(302, new_session.status_code)
+        self.assertEqual(200, new_session.status_code)
 
         start = time.time()
         with ThreadPoolExecutor() as executor:

@@ -3,8 +3,8 @@ import heapq
 from flask_login import UserMixin
 
 # Initialize MongoDB client and database (global)
-# client = MongoClient('mongodb://mongo:27017/')
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb://mongo:27017/')
+# client = MongoClient('mongodb://localhost:27017/')
 db_users = client['Users']
 db_words = client['Words']
 db_guesses = client['Guess']

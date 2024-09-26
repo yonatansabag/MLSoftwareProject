@@ -4,10 +4,8 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import google.generativeai as genai
-from PIL import Image
-import time
+from dotenv import load_dotenv
 import random
-from sentence_transformers import SentenceTransformer
 import numpy as np
 from mongo.mongo_users import WordDatabase, GuessesDatabase
 import cohere
@@ -15,64 +13,36 @@ from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
 from .app import socketio
-#import socketio from main.py
-
-
-
-# from website.app import create_socketio
-
 
 # Create a Flask Blueprint named 'views'
 views = Blueprint('views', __name__)
-
+load_dotenv()
 # Set your Google API key for generative AI
-GOOGLE_API_KEY = "AIzaSyBb4ac6RgyxuARwEyfJs9VkjTRp_wiYjoM"
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+COHERE_KEY = os.getenv('COHERE_KEY')
 # Configure generative AI with the API key
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
-co = cohere.Client("asNorrF7zKKhnbbpYVB0VZIs1UHu4MnTV1O3gXXe")
-# embedding_model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
+co = cohere.Client(COHERE_KEY)
 
-rooms = {}  # TODO: move to DB ??
+rooms = {}
 
 
-@views.route('/', methods=['GET', 'POST'])
+@views.route('/', methods=['GET'])
 def home():
     """
     Route for the home page.
 
     GET: Renders 'home.html' template.
-    POST: Increments 'SUCCESS' counter in current app configuration.
 
     Returns:
         Template: 'home.html'
     """
-    current_app.config['SUCCESS'] += 1
     return render_template("home.html", user=current_user)
 
 
-def describe_image(image_path):
-    """
-    Generates a textual description of   an image using generative AI.
-
-    Args:
-        image_path (str): Path to the image file.
-
-    Returns:
-        str: Generated description of the image.
-    """
-    # TODO: Check if path is fined or need to send image
-    text_prompt = "Describe the image"
-    image = Image.open(image_path)
-    prompt = [text_prompt, image]
-    response = model.generate_content(prompt)
-    if not response.text:
-        # self.update_state(state='FAILURE', meta={'error': 'Failed to generate description'})
-        return {'error': 'Failed to generate description'}
-    return response.text
-
 @views.route('/classify_image', methods=['POST', 'GET'])
-@login_required 
+@login_required
 def classify_image():
     if request.method == 'GET':
         return render_template('classify_image.html')
@@ -85,6 +55,9 @@ def classify_image():
         if file.filename == '':
             return make_response(jsonify({'error': {'code': 400, 'message': 'No selected file'}}), 400)
 
+        if file and file.filename.rsplit('.', 1)[1].lower() not in ['jpg', 'jpeg', 'png']:
+            return make_response(jsonify({'error': {'code': 400, 'message': 'Invalid file type'}}), 400)
+
         if file:
             filename = secure_filename(file.filename)
             file_path = os.path.join('uploads', filename)
@@ -95,17 +68,16 @@ def classify_image():
             if is_async:
                 try:
                     response = requests.post(
-                        #  'http://127.0.0.1:5000/upload_async',    # if local
-                    'http://flask-app:5000/upload_async',  # if from machine
+                        #'http://127.0.0.1:6000/upload_async',  # if local
+                        'http://flask-app:6000/upload_async',  # if from machine
                         files={'image': open(file_path, 'rb')}
                     )
                     if response.status_code == 202:
+
                         result = response.json()
                         request_id = result.get('request_id')
                         return make_response(jsonify({'request_id': request_id}), 202)
                     else:
-                        # print(response)
-                        # return make_response(jsonify({'error': {'code': 500, 'message': 'Failed to classify image'}}), 500)
                         try:
                             error_info = response.json()  # Try to parse the JSON response
                             print(f"Error Code: {error_info['error']['code']}")
@@ -117,12 +89,11 @@ def classify_image():
                     return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
             else:
                 response = requests.post(
-                    # 'http://127.0.0.1:5000/upload_sync',    # if local
-                    'http://flask-app:5000/upload_sync',  # if from machine
+                    #'http://127.0.0.1:6000/upload_sync',  # if local
+                     'http://flask-app:6000/upload_sync',  # if from machine
                     files={'image': open(file_path, 'rb')}
                 )
                 if response.status_code == 200:
-                    current_app.config['SUCCESS'] += 1
                     result = response.json()
                     return make_response(jsonify(result), 200)
                 else:
@@ -134,8 +105,8 @@ def classify_image():
 @views.route('/result/<request_id>', methods=['GET'])
 @login_required
 def get_result(request_id):
-    response = requests.get(f'http://flask-app:5000/result/{request_id}') # if from machine
-    # response = requests.get(f'http://127.0.0.1:5000/result/{request_id}') # if local
+    response = requests.get(f'http://flask-app:6000/result/{request_id}') # if from machine
+    # response = requests.get(f'http://127.0.0.1:6000/result/{request_id}')  # if local
 
     if response.status_code == 200:
         result = response.json()
@@ -144,31 +115,6 @@ def get_result(request_id):
         return make_response(jsonify({'error': {'code': 404, 'message': 'ID not found'}}), 404)
     else:
         return make_response(jsonify({'error': {'code': 500, 'message': 'Failed to fetch result'}}), 500)
-
-
-
-@views.route('/status', methods=['GET'])
-def status():
-    """
-    Route for fetching application status.
-
-    Returns:
-        JSON Response: Application uptime, success and failure counts, health status, and API version.
-    """
-    # TODO: Modify data to follow processes of upload image async
-    current_app.config['SUCCESS'] += 1
-    data = {
-        'uptime': time.time() - current_app.config['START_TIME'],
-        'processed': {
-            'success': current_app.config['SUCCESS'],
-            'fail': current_app.config['FAILURE'],
-            'running': 0,
-            'queued': 0,
-        },
-        'health': 'ok',
-        'api_version': 0.21,
-    }
-    return make_response(jsonify(data), 200)
 
 
 def generate_unique_code(length):
@@ -213,13 +159,14 @@ def roomjoin():
         if create:
             num_players = request.form.get("num_players")
             room = generate_unique_code(4)
-            rooms[room] = {"members": 1, "game_started": False, "game_starter": name, "num_players_in_room" : num_players,
+            rooms[room] = {"members": 1, "game_started": False, "game_starter": name,
+                           "num_players_in_room": num_players,
                            'players': [], 'winners': []}
             session["room"] = room
             session["name"] = name
             # rooms[room]['players'].append(name)
-            return redirect(url_for('views.waiting',room_code=code))
-        
+            return redirect(url_for('views.waiting', room_code=code))
+
         if join:
             # Check if the room code exists when trying to join a room
             if code not in rooms:
@@ -234,6 +181,7 @@ def roomjoin():
             return redirect(url_for('views.game', room_code=code))
 
     return render_template('room.html')
+
 
 @views.route('/waiting')
 def waiting():
@@ -295,18 +243,19 @@ def setup_socketio_handlers(socketio):
             send({"name": name, "message": "has left the room"}, to=room)
             print(f'{name} has left room {room}')
 
+
 @views.route('/check_game_status')
 def check_game_status():
     room = session.get("room")
     if not room or room not in rooms:
         return jsonify({"error": "Invalid room code or not joined"}), 404
     # Here is where the KeyError occurs 
-    if int(rooms[room]['members']) == int(rooms[room]['num_players_in_room']):  
+    if int(rooms[room]['members']) == int(rooms[room]['num_players_in_room']):
         return jsonify({"game_started": True})
     else:
         return jsonify({"game_started": False})
 
-            
+
 @views.route('/start_game', methods=['POST'])
 # @socketio.on('start_game')
 def start_game():
@@ -319,9 +268,8 @@ def start_game():
     room = session.get("room")
     if room is None or room not in rooms:
         return jsonify({"error": "Room not found"}), 400
-    
+
     if int(rooms[room]['members']) != int(rooms[room]['num_players_in_room']):
-        
         return jsonify({"error": "Not enough people"}), 403
 
     # Generate the hidden word
@@ -417,7 +365,7 @@ def guess():
             GuessesDatabase.add_word(room, name, user_guess, score)
         else:
             rooms[room]['winners'].append(session.get('name'))
-            
+
     except ValueError:
         # If conversion fails, provide a default score or handle the error
         score = 0.0
@@ -440,18 +388,21 @@ def best_guess():
     room = room = session.get('room')
     words = GuessesDatabase.get_best(room)
     return jsonify(words)
-        
+
+
 @views.route('/winner_list', methods=['GET'])
 def winners():
     room = session.get('room')
     return jsonify(rooms[room]['winners'])
-    
+
+
 @views.route('/user_guesses', methods=['GET'])
 def all_guesses():
     room = session.get('room')
     name = session.get('name')
     words = GuessesDatabase.print_all(room, name)
     return jsonify(words)
+
 
 @views.route('/end_game', methods=['GET'])
 def end_game():
@@ -463,7 +414,7 @@ def end_game():
     """
     name = session.get('name')
     room = session.get('room')
-    rooms[room]['game_started']= True
+    rooms[room]['game_started'] = True
     hidden_word_room = rooms[room]['hidden_word']
     hidden_word = session.pop('hidden_word', None)
     if hidden_word:

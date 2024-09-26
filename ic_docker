@@ -10,8 +10,8 @@ COPY IC_API/ ./
 # Install the necessary packages
 RUN pip install --no-cache-dir Flask pymongo pillow google-generativeai
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Make port 6000 available to the world outside this container
+EXPOSE 6000
 
 # Run the application
 CMD ["python", "app.py"]
