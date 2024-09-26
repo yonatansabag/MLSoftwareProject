@@ -13,9 +13,11 @@ from flask import redirect
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 from string import ascii_uppercase
 from .app import socketio
+# Create a Flask Blueprint named 'views'
+from dotenv import load_dotenv
 
 # Create a Flask Blueprint named 'views'
-views = Blueprint('views', __name__)
+views = Blueprint('views', __name__)    
 load_dotenv()
 # Set your Google API key for generative AI
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
