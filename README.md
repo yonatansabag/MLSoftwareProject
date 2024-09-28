@@ -18,7 +18,7 @@ Welcome to **WordGuess & Image Classification**, a web application where enterta
 2. **Create a .env file:** In the root directory of the project, create a .env file to store your API keys. The file should contain:
     ```bash
     GOOGLE_API_KEY=<your-google-api-key>
-    COHERE_API_KEY=<your-cohere-api-key>
+    COHERE_KEY=<your-cohere-api-key>
     ```
     
 3. **Build and run the Docker containers:** Use the provided Docker Compose setup to run the app.
