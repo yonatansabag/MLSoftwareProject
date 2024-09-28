@@ -37,7 +37,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.create_test_image(path, size=size, color='blue')
 
     def test_upload_sync_valid_image(self):
-        url = f'{self.BASE_URL}/upload_sync'
+        url = f'{self.BASE_URL}/upload_image'
         with open(self.test_image_path, 'rb') as img:
             files = {'image': ('test_image.jpg', img, 'image/jpeg')}
             response = requests.post(url, files=files)
@@ -48,7 +48,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.assertTrue(len(data['matches']) > 0)
 
     def test_upload_sync_invalid_file(self):
-        url = f'{self.BASE_URL}/upload_sync'
+        url = f'{self.BASE_URL}/upload_image'
         with open(self.test_text_path, 'rb') as txt:
             files = {'image': ('test.txt', txt, 'text/plain')}
             response = requests.post(url, files=files)
@@ -56,13 +56,13 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.assertIn('error', response.json())
 
     def test_upload_sync_no_file(self):
-        url = f'{self.BASE_URL}/upload_sync'
+        url = f'{self.BASE_URL}/upload_image'
         response = requests.post(url)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
 
     def test_upload_async_valid_image(self):
-        url = f'{self.BASE_URL}/upload_async'
+        url = f'{self.BASE_URL}/async_upload'
         with open(self.test_image_path, 'rb') as img:
             files = {'image': ('test_image.jpg', img, 'image/jpeg')}
             response = requests.post(url, files=files)
@@ -71,15 +71,15 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.assertIn('request_id', data)
 
     def test_upload_async_invalid_file(self):
-        url = f'{self.BASE_URL}/upload_async'
+        url = f'{self.BASE_URL}/async_upload'
         with open(self.test_text_path, 'rb') as txt:
             files = {'image': ('test.txt', txt, 'text/plain')}
             response = requests.post(url, files=files)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
 
-    def test_get_result_valid_id(self):
-        upload_url = f'{self.BASE_URL}/upload_async'
+    def test_get_result_valid_id(self): 
+        upload_url = f'{self.BASE_URL}/async_upload'
         with open(self.test_image_path, 'rb') as img:
             files = {'image': ('test_image.jpg', img, 'image/jpeg')}
             upload_response = requests.post(upload_url, files=files)
@@ -110,7 +110,7 @@ class TestImageClassificationAPI(unittest.TestCase):
     # New tests
 
     def test_upload_sync_large_image(self):
-        url = f'{self.BASE_URL}/upload_sync'
+        url = f'{self.BASE_URL}/upload_image'
         with open(self.large_image_path, 'rb') as img:
             files = {'image': ('large_test_image.jpg', img, 'image/jpeg')}
             response = requests.post(url, files=files)
@@ -119,7 +119,7 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.assertIn('matches', data)
 
     def test_upload_async_large_image(self):
-        url = f'{self.BASE_URL}/upload_async'
+        url = f'{self.BASE_URL}/async_upload'
         with open(self.large_image_path, 'rb') as img:
             files = {'image': ('large_test_image.jpg', img, 'image/jpeg')}
             response = requests.post(url, files=files)
@@ -127,21 +127,21 @@ class TestImageClassificationAPI(unittest.TestCase):
         self.assertIn('request_id', response.json())
 
     def test_upload_sync_empty_file(self):
-        url = f'{self.BASE_URL}/upload_sync'
+        url = f'{self.BASE_URL}/upload_image'
         files = {'image': ('empty.jpg', io.BytesIO(), 'image/jpeg')}
         response = requests.post(url, files=files)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
 
     def test_upload_async_empty_file(self):
-        url = f'{self.BASE_URL}/upload_async'
+        url = f'{self.BASE_URL}/async_upload'
         files = {'image': ('empty.jpg', io.BytesIO(), 'image/jpeg')}
         response = requests.post(url, files=files)
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
 
     def test_concurrent_uploads(self):
-        url = f'{self.BASE_URL}/upload_async'
+        url = f'{self.BASE_URL}/async_upload'
         request_ids = []
         num_concurrent = 3
 
@@ -167,7 +167,7 @@ class TestImageClassificationAPI(unittest.TestCase):
                 self.fail(f"Result processing did not complete in time for request_id: {request_id}")
 
     def test_get_result_multiple_times(self):
-        upload_url = f'{self.BASE_URL}/upload_async'
+        upload_url = f'{self.BASE_URL}/async_upload'
         with open(self.test_image_path, 'rb') as img:
             files = {'image': ('test_image.jpg', img, 'image/jpeg')}
             upload_response = requests.post(upload_url, files=files)
