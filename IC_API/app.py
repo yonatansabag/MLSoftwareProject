@@ -80,7 +80,7 @@ def create_app():
             print(f"Error processing image: {str(e)}")
             return {'error': "Failed to describe image"}
 
-    @app.route('/upload_sync', methods=['POST'])
+    @app.route('/upload_image', methods=['POST'])
     def upload_image_sync():
         """
         Route for uploading an image and getting a synchronous response.
@@ -120,7 +120,7 @@ def create_app():
 
             return make_response(jsonify({'error': {'code': 500, 'message': error_message}}), 500)
 
-    @app.route('/upload_async', methods=['POST'])
+    @app.route('/async_upload', methods=['POST'])
     def upload_image_async():
         """
         Route for uploading an image and getting an asynchronous response.
