@@ -20,6 +20,7 @@ Welcome to **WordGuess & Image Classification**, a web application where enterta
     GOOGLE_API_KEY=<your-google-api-key>
     COHERE_KEY=<your-cohere-api-key>
     ```
+    (Note: The API keys should be strings, enclosed in double quotes.)
     
 3. **Build and run the Docker containers:** Use the provided Docker Compose setup to run the app.
     ```bash
