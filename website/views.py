@@ -70,8 +70,8 @@ def classify_image():
             if is_async:
                 try:
                     response = requests.post(
-                        #'http://127.0.0.1:6000/upload_async',  # if local
-                        'http://flask-app:6000/upload_async',  # if from machine
+                        #'http://127.0.0.1:6000/async_upload',  # if local
+                        'http://flask-app:6000/async_upload',  # if from machine
                         files={'image': open(file_path, 'rb')}
                     )
                     if response.status_code == 202:
@@ -91,8 +91,8 @@ def classify_image():
                     return make_response(jsonify({'error': {'code': 500, 'message': str(e)}}), 500)
             else:
                 response = requests.post(
-                    #'http://127.0.0.1:6000/upload_sync',  # if local
-                     'http://flask-app:6000/upload_sync',  # if from machine
+                    #'http://127.0.0.1:6000/upload_image',  # if local
+                     'http://flask-app:6000/upload_image',  # if from machine
                     files={'image': open(file_path, 'rb')}
                 )
                 if response.status_code == 200:
