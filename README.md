@@ -28,9 +28,9 @@ Welcome to **WordGuess & Image Classification**, a web application where enterta
 
 4. **Access the app:** Once the setup is complete, the application will be accessible at:
    
-   *Main app: http://<your-server-ip>:8000
+   *Main app: http://<your-server-ip>:80
    
-   For example, if your IP address is 40.76.35.49, the app will be available at: 40.76.35.49:8000
+   For example, if your IP address is 40.76.35.49, the app will be available at: 40.76.35.49:80
 
 6. **Shut down Docker when finished**: To stop the containers and remove the services, run:
     ```bash
